@@ -158,8 +158,7 @@ def main():
     vx, vy, vz    = velocitySum(ax, ay, az)
     px, py, pz    = positionSum(vx, vy, vz, ax, ay, az)
     plotter_3D(px,py,pz)
-    
-    
+        
 main()
 
 
@@ -167,10 +166,3 @@ main()
 NOTES:
 the structure of this code is rather poor IMO, could be worked upon in the future and probably easily made OOP'esque
 """
-
-"""
-add axes,labels and things on to the to the 
-make code that generates rhe data for the trajectory code and try do PID onto it
-
-"""
-

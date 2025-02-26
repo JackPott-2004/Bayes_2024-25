@@ -25,8 +25,8 @@ class Rocket():
         self.MASS = 5
         self.AREA = 0.2
         self.TIMESTEP = 0.01
-        #From centre of pressure to the centre of gravity
-        self.DISTANCE = -0.2 
+        #From centre of pressure to the centre of gravity,Should cock into positive wind values
+        self.DISTANCE = 0.2 
         #initially vertical
         self.ORIENTATION_X = 0.0 #radians
         self.ORIENTATION_Y = 0.0 #radians
@@ -67,11 +67,13 @@ class Rocket():
         return torque_x, torque_y
 
     def changeInAngularVelocity(self, torque_x, torque_y):
+        """This method finds the change (in radians per second) of the rockets angular velocities"""
         self.ANGULAR_VELOCITY_X = self.TIMESTEP * torque_x / self.INERTIA
         self.ANGULAR_VELOCITY_Y = self.TIMESTEP * torque_y / self.INERTIA
         return self
 
     def changeInOrientation(self):
+        """This method finds the change (in radians) of the rockets oreintation"""
         self.ORIENTATION_X += self.ANGULAR_VELOCITY_X * self.TIMESTEP
         self.ORIENTATION_Y += self.ANGULAR_VELOCITY_Y * self.TIMESTEP
         return self
@@ -80,6 +82,7 @@ class Rocket():
         #2 components - acceleration from rocket and acceleration from relative wind speed
         ACCEL_VERT = 30
         
+        #THOUGHT:should these be swapped
         theta = self.ORIENTATION_X
         phi   = self.ORIENTATION_Y
 
@@ -169,3 +172,13 @@ Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
 
        
 plotter_3D(Ps_X,Ps_Y,Ps_Z)
+     
+#plotter_3D(Os_X,Os_Y,Os_Z)
+
+"""
+THIS IS JUST MY THOUGHTS
+Next steps:
+consider that the force may be reduced as it is hitting at an angle
+
+
+"""

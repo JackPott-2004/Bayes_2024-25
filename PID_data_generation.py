@@ -9,8 +9,10 @@ you will be prompted for the wind speed in x direction
 you will be prompted for the wind speed in y direction
 the rockets trajectory will be plotted, it will show it being cocked into the wind
 optional - put a delay in when wind starts, variable wind speed with height
-"""
 
+
+"""
+ 
 #The imports
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
@@ -46,6 +48,7 @@ class Rocket():
          
         
     def getInputs(self):
+        """This takes in values for the wind speed in X & Y directions and the duration of the flight"""
         self.WSX = float(input("What is the windspeed in the X direction: "))
         self.WSY = float(input("What is the windspeed in the Y direction: "))
         self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
@@ -57,6 +60,10 @@ class Rocket():
         return self.RWS_X, self.RWS_Y
         
     def torqueCalc(self): 
+        """This method calculates the torque on the rocket
+        
+        may need to add a "self correcting" component to this"""
+        #As the rockets orientation changes there will be less surface area in the direction of the wind to be hit
         crossSectionalArea_x = self.AREA * (np.cos(self.ORIENTATION_X)) 
         crossSectionalArea_y = self.AREA * (np.cos(self.ORIENTATION_Y))
         self.relativeWindSpeedCalc()
@@ -147,10 +154,6 @@ class Rocket():
             
         return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z
         
-        
-    def returnAngularVel(self):
-        return self.ANGULAR_VELOCITY_X, self.ANGULAR_VELOCITY_Y 
-    
 """ OTHER FUNCTIONS - 1 for now"""
 
 def plotter_3D(x,y,z):
@@ -178,7 +181,9 @@ plotter_3D(Ps_X,Ps_Y,Ps_Z)
 """
 THIS IS JUST MY THOUGHTS
 Next steps:
-consider that the force may be reduced as it is hitting at an angle
+consider that the force may be reduced as it is hitting at an angle (unsure)
+consider the RWS in z direction (and different horizontal distance?)
+
 
 
 """

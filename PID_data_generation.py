@@ -11,7 +11,7 @@ the rockets trajectory will be plotted, it will show it being cocked into the wi
 optional - put a delay in when wind starts, variable wind speed with height
 """
 
-#The necessary imports
+#The imports
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
@@ -62,8 +62,8 @@ class Rocket():
         self.relativeWindSpeedCalc()
         force_x =  ((self.RWS_X)**2) * crossSectionalArea_x * DRAG_CONSTANT * np.sign(self.RWS_X)
         force_y =  ((self.RWS_Y)**2) * crossSectionalArea_y * DRAG_CONSTANT * np.sign(self.RWS_Y)
-        torque_y =  self.DISTANCE * force_x
-        torque_x =  self.DISTANCE * force_y
+        torque_y =  self.DISTANCE * force_y
+        torque_x =  self.DISTANCE * force_x
         return torque_x, torque_y
 
     def changeInAngularVelocity(self, torque_x, torque_y):
@@ -83,20 +83,23 @@ class Rocket():
         theta = self.ORIENTATION_X
         phi   = self.ORIENTATION_Y
 
+
+
         rotation_pitch = np.array([[1, 0, 0] ,
                                    [0, np.cos(theta), -1 * np.sin(theta)],
                                    [0, np.sin(theta), np.cos(theta)]])
         rotation_yaw   = np.array([[np.cos(phi), 0, np.sin(phi)],
                                    [0, 1, 0],
                                    [-1 * np.sin(phi), 0 , np.cos(phi)]])
-        #This combines the rotation matrices so tha
+        #This combines the rotation matrices so that
         #rotation_total = np.dot(rotation_pitch, rotation_yaw)
         rotation_total = np.dot(rotation_yaw,rotation_pitch)
         
-        a_prime = np.array([[0], [0], [ACCEL_VERT]])
+        a_prime = np.array([0, 0, ACCEL_VERT])
         a = np.dot(rotation_total, a_prime)
+        print(a)
  
-        DRAG_CONSTANT = float(0.3) # 0.5 * density of fluid * drag coefficient
+        DRAG_CONSTANT = 0.3
         crossSectionalArea_X = self.AREA * (np.cos(self.ORIENTATION_X)) 
         crossSectionalArea_Y = self.AREA * (np.cos(self.ORIENTATION_Y))
         
@@ -104,9 +107,9 @@ class Rocket():
         force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * DRAG_CONSTANT
         force_Y =  ((self.RWS_Y)**2) * crossSectionalArea_Y * DRAG_CONSTANT
         
-        self.VELOCITY_X += a[0][0] + force_X / self.MASS
-        self.VELOCITY_Y += a[1][0] + force_Y / self.MASS
-        self.VELOCITY_Z += a[2][0]
+        self.VELOCITY_X += a[0] + force_X / self.MASS
+        self.VELOCITY_Y += a[1] + force_Y / self.MASS
+        self.VELOCITY_Z += a[2]
         return self
     
     def changeInPosition(self):
@@ -134,8 +137,8 @@ class Rocket():
             
             self.changeInVelocity()
             self.changeInPosition()
-            T_x, T_y = self.torqueCalc()
-            self.changeInAngularVelocity(T_x, T_y)
+            Tx, Ty = self.torqueCalc()
+            self.changeInAngularVelocity(Tx, Ty)
             self.changeInOrientation()
             #if self.ORIENTATION_X > 0.3:
                 #time = self.DURATION
@@ -146,34 +149,26 @@ class Rocket():
         
     def returnAngularVel(self):
         return self.ANGULAR_VELOCITY_X, self.ANGULAR_VELOCITY_Y 
-        
+    
+""" OTHER FUNCTIONS - 1 for now"""
+
+def plotter_3D(x,y,z):
+    fig = plt.figure(figsize=(12,8))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot3D(x,y,z, linewidth=5)
+    ax.set_xlabel('X-axis') 
+    ax.set_ylabel('Y-axis')  
+    ax.set_zlabel('Z-axis')  
+    plt.show()
+
+
 """MAIN"""        
         
 times_ = np.linspace(0,1000,1)
 rocket = Rocket()
 rocket.getInputs()
 Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
-def plotter_3D(x,y,z):
-    fig = plt.figure(figsize=(12,8))
-    ax = fig.add_subplot(111, projection='3d')
-    
-    ax.plot3D(x,y,z, linewidth=5)
 
-    #ax.set_xlim(0, )  # Adjust X-axis range
-    #ax.set_ylim(0, y[-1])  # Adjust Y-axis rang
-    #ax.set_zlim(0, z[-1])  # Adjust Z-axis range
-    ax.set_xlabel('X-axis') 
-    ax.set_ylabel('Y-axis')  
-    ax.set_zlabel('Z-axis')  
-    plt.show()
-    
-    
-def plotter(x,y):
-    plt.plot(x, y, lw="5")
-    plt.show
 
+       
 plotter_3D(Os_X, Os_Y, times_)
-#plotter_3D(Os_X, Os_Y, Os_Z)
-#3D rotations aren't commutattive
-#Why is it going into the ground
-#

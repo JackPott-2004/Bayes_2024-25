@@ -1,0 +1,188 @@
+#Rocket Sim with wind
+
+#Here is a link to a nasa article that explains weather cocking
+#https://www.grc.nasa.gov/WWW/k-12/VirtualAero/BottleRocket/airplane/rktcock.html
+"""
+wind will always be horizontal
+the rocket is a cylinder
+
+
+The rocket should never be more than ___ degrees from the vertical so
+
+FINAL RESULT
+you will be prompted how long you'd like the rocket to fly for
+you will be prompted for the wind speed in x direction
+you will be prompted for the wind speed in y direction
+the rockets trajectory will be plotted, it will show it being cocked into the wind
+optional - put a delay in when wind starts, variable wind speed with height
+"""
+
+#The necessary imports
+from mpl_toolkits import mplot3d
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+
+
+class Rocket():
+    
+    def __init__(self):
+        self.LENGTH = 1.0
+        self.MASS = 5
+        self.AREA = 0.2
+        self.TIMESTEP = 0.01
+        #From centre of pressure to the centre of gravity
+        self.DISTANCE = -0.2 
+        #initially vertical
+        self.ORIENTATION_X = 0.0 #radians
+        self.ORIENTATION_Y = 0.0 #radians
+        self.ORIENTATION_Z = 0.0 #radians
+        self.ANGULAR_VELOCITY_X = 0.0
+        self.ANGULAR_VELOCITY_Y = 0.0
+        self.ANGULAR_VELOCITY_Z = 0.0
+        self.VELOCITY_X = 0.0
+        self.VELOCITY_Y = 0.0
+        self.VELOCITY_Z = 0.0
+        self.POSITION_X = 0.0
+        self.POSITION_Y = 0.0
+        self.POSITION_Z = 0.0
+        self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
+        
+         
+        
+    def getInputs(self):
+        self.WSX = float(input("What is the windspeed in the X direction: "))
+        self.WSY = float(input("What is the windspeed in the Y direction: "))
+        self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
+        return self
+        
+    def relativeWindSpeedCalc(self):
+        self.RWS_X = self.WSX - self.VELOCITY_X
+        self.RWS_Y = self.WSY - self.VELOCITY_Y
+        return self.RWS_X, self.RWS_Y
+        
+    def torqueCalc(self): 
+        DRAG_CONSTANT = 2 # 0.5 * density of fluid * drag coefficient
+        crossSectionalArea_x = self.AREA * (np.cos(self.ORIENTATION_X)) 
+        crossSectionalArea_y = self.AREA * (np.cos(self.ORIENTATION_Y))
+        self.relativeWindSpeedCalc()
+        force_x =  ((self.RWS_X)**2) * crossSectionalArea_x * DRAG_CONSTANT * np.sign(self.RWS_X)
+        force_y =  ((self.RWS_Y)**2) * crossSectionalArea_y * DRAG_CONSTANT * np.sign(self.RWS_Y)
+        torque_y =  self.DISTANCE * force_x
+        torque_x =  self.DISTANCE * force_y
+        return torque_x, torque_y
+
+    def changeInAngularVelocity(self, torque_x, torque_y):
+        self.ANGULAR_VELOCITY_X = self.TIMESTEP * torque_x / self.INERTIA
+        self.ANGULAR_VELOCITY_Y = self.TIMESTEP * torque_y / self.INERTIA
+        return self
+
+    def changeInOrientation(self):
+        self.ORIENTATION_X += self.ANGULAR_VELOCITY_X * self.TIMESTEP
+        self.ORIENTATION_Y += self.ANGULAR_VELOCITY_Y * self.TIMESTEP
+        return self
+    
+    def changeInVelocity(self):
+        #2 components - acceleration from rocket and acceleration from relative wind speed
+        ACCEL_VERT = 30
+        
+        theta = self.ORIENTATION_X
+        phi   = self.ORIENTATION_Y
+
+        rotation_pitch = np.array([[1, 0, 0] ,
+                                   [0, np.cos(theta), -1 * np.sin(theta)],
+                                   [0, np.sin(theta), np.cos(theta)]])
+        rotation_yaw   = np.array([[np.cos(phi), 0, np.sin(phi)],
+                                   [0, 1, 0],
+                                   [-1 * np.sin(phi), 0 , np.cos(phi)]])
+        #This combines the rotation matrices so tha
+        #rotation_total = np.dot(rotation_pitch, rotation_yaw)
+        rotation_total = np.dot(rotation_yaw,rotation_pitch)
+        
+        a_prime = np.array([[0], [0], [ACCEL_VERT]])
+        a = np.dot(rotation_total, a_prime)
+ 
+        DRAG_CONSTANT = float(0.3) # 0.5 * density of fluid * drag coefficient
+        crossSectionalArea_X = self.AREA * (np.cos(self.ORIENTATION_X)) 
+        crossSectionalArea_Y = self.AREA * (np.cos(self.ORIENTATION_Y))
+        
+        self.relativeWindSpeedCalc()
+        force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * DRAG_CONSTANT
+        force_Y =  ((self.RWS_Y)**2) * crossSectionalArea_Y * DRAG_CONSTANT
+        
+        self.VELOCITY_X += a[0][0] + force_X / self.MASS
+        self.VELOCITY_Y += a[1][0] + force_Y / self.MASS
+        self.VELOCITY_Z += a[2][0]
+        return self
+    
+    def changeInPosition(self):
+        self.POSITION_X += self.VELOCITY_X * self.TIMESTEP
+        self.POSITION_Y += self.VELOCITY_Y * self.TIMESTEP
+        self.POSITION_Z += self.VELOCITY_Z * self.TIMESTEP
+        return self
+    
+    
+    def execute(self):
+        time = 0
+        Ps_X = []
+        Ps_Y = []
+        Ps_Z = []
+        Os_X = []
+        Os_Y = []
+        Os_Z = []
+        while (time < self.DURATION):
+            Ps_X.append(self.POSITION_X)
+            Ps_Y.append(self.POSITION_Y)
+            Ps_Z.append(self.POSITION_Z)
+            Os_X.append(self.ORIENTATION_X)
+            Os_Y.append(self.ORIENTATION_Y)
+            Os_Z.append(self.ORIENTATION_Z)
+            
+            self.changeInVelocity()
+            self.changeInPosition()
+            T_x, T_y = self.torqueCalc()
+            self.changeInAngularVelocity(T_x, T_y)
+            self.changeInOrientation()
+            #if self.ORIENTATION_X > 0.3:
+                #time = self.DURATION
+            time += self.TIMESTEP
+            
+        return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z
+        
+        
+    def returnAngularVel(self):
+        return self.ANGULAR_VELOCITY_X, self.ANGULAR_VELOCITY_Y 
+        
+"""MAIN"""        
+        
+times_ = np.linspace(0,1000,1)
+buster = Rocket()
+buster.getInputs()
+Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = buster.execute()
+Ax, Ay = buster. returnAngularVel
+#time = np.linspace(0, buster.DURATION, (buster.DURATION / buster.TIMESTEP))
+def plotter_3D(x,y,z):
+    fig = plt.figure(figsize=(12,8))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.plot3D(x,y,z, linewidth=5)
+
+    #ax.set_xlim(0, )  # Adjust X-axis range
+    #ax.set_ylim(0, y[-1])  # Adjust Y-axis rang
+    #ax.set_zlim(0, z[-1])  # Adjust Z-axis range
+    ax.set_xlabel('X-axis') 
+    ax.set_ylabel('Y-axis')  
+    ax.set_zlabel('Z-axis')  
+    plt.show()
+    
+    
+def plotter(x,y):
+    plt.plot(x, y, lw="5")
+    plt.show
+
+plotter_3D(Os_X, Os_Y, times_)
+#plotter_3D(Os_X, Os_Y, Os_Z)
+#3D rotations aren't commutattive
+#Why is it going into the ground
+#

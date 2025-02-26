@@ -1,12 +1,6 @@
 #Rocket Sim with wind
 
-#Here is a link to a nasa article that explains weather cocking
-#https://www.grc.nasa.gov/WWW/k-12/VirtualAero/BottleRocket/airplane/rktcock.html
 """
-wind will always be horizontal
-the rocket is a cylinder
-
-
 The rocket should never be more than ___ degrees from the vertical so
 
 FINAL RESULT
@@ -21,7 +15,6 @@ optional - put a delay in when wind starts, variable wind speed with height
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
-import math
 
 
 
@@ -157,11 +150,9 @@ class Rocket():
 """MAIN"""        
         
 times_ = np.linspace(0,1000,1)
-buster = Rocket()
-buster.getInputs()
-Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = buster.execute()
-Ax, Ay = buster. returnAngularVel
-#time = np.linspace(0, buster.DURATION, (buster.DURATION / buster.TIMESTEP))
+rocket = Rocket()
+rocket.getInputs()
+Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
 def plotter_3D(x,y,z):
     fig = plt.figure(figsize=(12,8))
     ax = fig.add_subplot(111, projection='3d')

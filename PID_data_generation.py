@@ -41,6 +41,7 @@ class Rocket():
         self.POSITION_Y = 0.0
         self.POSITION_Z = 0.0
         self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
+        self.DRAG_CONSTANT = 0.3
         
          
         
@@ -56,12 +57,11 @@ class Rocket():
         return self.RWS_X, self.RWS_Y
         
     def torqueCalc(self): 
-        DRAG_CONSTANT = 2 # 0.5 * density of fluid * drag coefficient
         crossSectionalArea_x = self.AREA * (np.cos(self.ORIENTATION_X)) 
         crossSectionalArea_y = self.AREA * (np.cos(self.ORIENTATION_Y))
         self.relativeWindSpeedCalc()
-        force_x =  ((self.RWS_X)**2) * crossSectionalArea_x * DRAG_CONSTANT * np.sign(self.RWS_X)
-        force_y =  ((self.RWS_Y)**2) * crossSectionalArea_y * DRAG_CONSTANT * np.sign(self.RWS_Y)
+        force_x =  ((self.RWS_X)**2) * crossSectionalArea_x * self.DRAG_CONSTANT * np.sign(self.RWS_X)
+        force_y =  ((self.RWS_Y)**2) * crossSectionalArea_y * self.DRAG_CONSTANT * np.sign(self.RWS_Y)
         torque_y =  self.DISTANCE * force_y
         torque_x =  self.DISTANCE * force_x
         return torque_x, torque_y
@@ -97,19 +97,17 @@ class Rocket():
         
         a_prime = np.array([0, 0, ACCEL_VERT])
         a = np.dot(rotation_total, a_prime)
-        print(a)
  
-        DRAG_CONSTANT = 0.3
         crossSectionalArea_X = self.AREA * (np.cos(self.ORIENTATION_X)) 
         crossSectionalArea_Y = self.AREA * (np.cos(self.ORIENTATION_Y))
         
         self.relativeWindSpeedCalc()
-        force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * DRAG_CONSTANT
-        force_Y =  ((self.RWS_Y)**2) * crossSectionalArea_Y * DRAG_CONSTANT
+        force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * self.DRAG_CONSTANT
+        force_Y =  ((self.RWS_Y)**2) * crossSectionalArea_Y * self.DRAG_CONSTANT
         
-        self.VELOCITY_X += a[0] + force_X / self.MASS
-        self.VELOCITY_Y += a[1] + force_Y / self.MASS
-        self.VELOCITY_Z += a[2]
+        self.VELOCITY_X += (a[0] + force_X / self.MASS) * self.TIMESTEP
+        self.VELOCITY_Y += (a[1] + force_Y / self.MASS) * self.TIMESTEP
+        self.VELOCITY_Z += a[2] * self.TIMESTEP
         return self
     
     def changeInPosition(self):
@@ -163,12 +161,11 @@ def plotter_3D(x,y,z):
 
 
 """MAIN"""        
-        
-times_ = np.linspace(0,1000,1)
+    
 rocket = Rocket()
 rocket.getInputs()
 Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
 
 
        
-plotter_3D(Os_X, Os_Y, times_)
+plotter_3D(Ps_X,Ps_Y,Ps_Z)

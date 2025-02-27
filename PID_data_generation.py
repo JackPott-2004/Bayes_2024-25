@@ -171,18 +171,14 @@ def plotter_3D(x,y,z):
 rocket = Rocket()
 rocket.getInputs()
 Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
-
-
-       
 plotter_3D(Ps_X,Ps_Y,Ps_Z)
-     
 #plotter_3D(Os_X,Os_Y,Os_Z)
 
 """
 THIS IS JUST MY THOUGHTS
 Next steps:
 consider that the force may be reduced as it is hitting at an angle (unsure)
-consider the RWS in z direction (and different horizontal distance?)
+consider the RWS in z direction (and different perpendicular distances in general?)
 
 
 

@@ -152,7 +152,7 @@ class Rocket():
             Tx, Ty = self.torqueCalc()
             self.changeInAngularVelocity(Tx, Ty)
             self.changeInOrientation()
-            #if self.ORIENTATION_X > 0.3:
+            #if self.ORIENTATION_X > 0.3: there also would be one i=of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP
             
@@ -183,7 +183,7 @@ THIS IS JUST MY THOUGHTS
 Next steps:
 consider that the force may be reduced as it is hitting at an angle (unsure)
 consider the RWS in z direction (and different perpendicular distances in general?)
-
+Work on variable names
 
 
 """

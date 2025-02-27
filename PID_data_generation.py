@@ -44,7 +44,10 @@ class Rocket():
         self.POSITION_Z = 0.0
         self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
         self.DRAG_CONSTANT = 0.3
-        
+        self.CANARD_ONE_ORIENTATION = 0.0
+        self.CANARD_TWO_ORIENTATION = 0.0
+        self.CANARD_THREE_ORIENTATION = 0.0
+        self.CANARD_FOUR_ORIENTATION = 0.0   
          
         
     def getInputs(self):

@@ -44,6 +44,7 @@ class Rocket():
         self.POSITION_Z = 0.0
         self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
         self.DRAG_CONSTANT = 0.3
+        self.CANARD_AREA = 1
         self.CANARD_ONE_ORIENTATION = 0.0
         self.CANARD_TWO_ORIENTATION = 0.0
         self.CANARD_THREE_ORIENTATION = 0.0
@@ -97,7 +98,7 @@ class Rocket():
         phi   = self.ORIENTATION_Y
 
 
-
+        """I think this section is wrong, may need to apply quaternions"""
         rotation_pitch = np.array([[1, 0, 0] ,
                                    [0, np.cos(theta), -1 * np.sin(theta)],
                                    [0, np.sin(theta), np.cos(theta)]])

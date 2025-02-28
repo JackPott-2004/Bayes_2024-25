@@ -14,9 +14,10 @@ optional - put a delay in when wind starts, variable wind speed with height
 """
  
 #The imports
-from mpl_toolkits import mplot3d
+#from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 
 
@@ -25,6 +26,7 @@ class Rocket():
     def __init__(self):
         self.LENGTH = 1.0
         self.MASS = 5
+        self.GRAVITY = -9.81
         self.AREA = 0.2
         self.TIMESTEP = 0.01
         #From centre of pressure to the centre of gravity,Should cock into positive wind values
@@ -53,14 +55,15 @@ class Rocket():
         
     def getInputs(self):
         """This takes in values for the wind speed in X & Y directions and the duration of the flight"""
-        self.WSX = float(input("What is the windspeed in the X direction: "))
-        self.WSY = float(input("What is the windspeed in the Y direction: "))
+        #These wind speeds are what is coming at the rocket
+        self.WSX = -float(input("What is the windspeed in the X direction: "))
+        self.WSY = -float(input("What is the windspeed in the Y direction: "))
         self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
         return self
         
     def relativeWindSpeedCalc(self):
-        self.RWS_X = self.WSX - self.VELOCITY_X
-        self.RWS_Y = self.WSY - self.VELOCITY_Y
+        self.RWS_X = self.VELOCITY_X - self.WSX  
+        self.RWS_Y = self.VELOCITY_Y - self.WSY  
         return self.RWS_X, self.RWS_Y
         
     def torqueCalc(self): 
@@ -73,8 +76,13 @@ class Rocket():
         self.relativeWindSpeedCalc()
         force_x =  ((self.RWS_X)**2) * crossSectionalArea_x * self.DRAG_CONSTANT * np.sign(self.RWS_X)
         force_y =  ((self.RWS_Y)**2) * crossSectionalArea_y * self.DRAG_CONSTANT * np.sign(self.RWS_Y)
-        torque_y =  self.DISTANCE * force_y
-        torque_x =  self.DISTANCE * force_x
+        force_vector = np.array([force_x, force_y,0])
+        moment_arm =np.array([0, 0, -self.DISTANCE])
+        torque = np.cross(moment_arm, force_vector)
+        torque_x =  torque[0]
+        torque_y =  torque[1]
+
+
         return torque_x, torque_y
 
     def changeInAngularVelocity(self, torque_x, torque_y):
@@ -89,29 +97,24 @@ class Rocket():
         self.ORIENTATION_Y += self.ANGULAR_VELOCITY_Y * self.TIMESTEP
         return self
     
+    #Is this method of numerical integration alright?
     def changeInVelocity(self):
         #2 components - acceleration from rocket and acceleration from relative wind speed
         ACCEL_VERT = 30
-        
-        #THOUGHT:should these be swapped
+        accel_array = [0,0,ACCEL_VERT]
+
         theta = self.ORIENTATION_X
         phi   = self.ORIENTATION_Y
 
+        axis_x = np.array([1,0,0])
+        axis_y = np.array([0,1,0])
 
-        """I think this section is wrong, may need to apply quaternions"""
-        rotation_pitch = np.array([[1, 0, 0] ,
-                                   [0, np.cos(theta), -1 * np.sin(theta)],
-                                   [0, np.sin(theta), np.cos(theta)]])
-        rotation_yaw   = np.array([[np.cos(phi), 0, np.sin(phi)],
-                                   [0, 1, 0],
-                                   [-1 * np.sin(phi), 0 , np.cos(phi)]])
-        #This combines the rotation matrices so that
-        #rotation_total = np.dot(rotation_pitch, rotation_yaw)
-        rotation_total = np.dot(rotation_yaw,rotation_pitch)
-        
-        a_prime = np.array([0, 0, ACCEL_VERT])
-        a = np.dot(rotation_total, a_prime)
- 
+        q_x = R.from_rotvec(theta * axis_x)
+        q_y = R.from_rotvec(phi * axis_y)
+
+        total_rotation = q_x * q_y
+        a = total_rotation.apply(accel_array)
+
         crossSectionalArea_X = self.AREA * (np.cos(self.ORIENTATION_X)) 
         crossSectionalArea_Y = self.AREA * (np.cos(self.ORIENTATION_Y))
         
@@ -119,9 +122,12 @@ class Rocket():
         force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * self.DRAG_CONSTANT
         force_Y =  ((self.RWS_Y)**2) * crossSectionalArea_Y * self.DRAG_CONSTANT
         
-        self.VELOCITY_X += (a[0] + force_X / self.MASS) * self.TIMESTEP
-        self.VELOCITY_Y += (a[1] + force_Y / self.MASS) * self.TIMESTEP
-        self.VELOCITY_Z += a[2] * self.TIMESTEP
+        force_array = np.array([force_X, force_Y,0])
+        force_rotated = total_rotation.apply(force_array)
+
+        self.VELOCITY_X += (a[0] + force_rotated[0] / self.MASS) * self.TIMESTEP
+        self.VELOCITY_Y += (a[1] + force_rotated[1] / self.MASS) * self.TIMESTEP
+        self.VELOCITY_Z += a[2] * self.TIMESTEP + self.GRAVITY * self.TIMESTEP
         return self
     
     def changeInPosition(self):

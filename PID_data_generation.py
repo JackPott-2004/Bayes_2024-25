@@ -31,6 +31,7 @@ class Rocket():
         self.TIMESTEP = 0.01
         #From centre of pressure to the centre of gravity,Should cock into positive wind values
         self.DISTANCE = 0.2 
+        self.CANARD_DISTANCE
         #initially vertical
         self.ORIENTATION_X = 0.0 #radians
         self.ORIENTATION_Y = 0.0 #radians
@@ -84,6 +85,16 @@ class Rocket():
 
 
         return torque_x, torque_y
+
+"""Thought:should i also consider the slight distance from the z axis for canard torque or is that doing too much"""
+
+    def canardTorqueCalc(self):
+        canard_one_area   = self.CANARD_AREA * np.sin(self.CANARD_ONE_ORIENTATION)
+        canard_two_area   = self.CANARD_AREA * np.sin(self.CANARD_TWO_ORIENTATION)
+        canard_three_area = self.CANARD_AREA * np.sin(self.CANARD_THREE_ORIENTATION)
+        canard_four_area  = self.CANARD_AREA * np.sin(self.CANARD_FOUR_ORIENTATION)
+        #Am i going to put the PID straight into this function or make another
+
 
     def changeInAngularVelocity(self, torque_x, torque_y):
         """This method finds the change (in radians per second) of the rockets angular velocities"""

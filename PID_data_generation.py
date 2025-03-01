@@ -31,8 +31,8 @@ class Rocket():
         self.TIMESTEP = 0.01
         #From centre of pressure to the centre of gravity,Should cock into positive wind values
         self.DISTANCE = 0.2 
-        self.CANARD_DISTANCE
         #initially vertical
+        #Maybe I should put all of these into arrays
         self.ORIENTATION_X = 0.0 #radians
         self.ORIENTATION_Y = 0.0 #radians
         self.ORIENTATION_Z = 0.0 #radians
@@ -48,6 +48,7 @@ class Rocket():
         self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
         self.DRAG_CONSTANT = 0.3
         self.CANARD_AREA = 1
+        self.CANARD_DISTANCE = 0.2
         self.CANARD_ONE_ORIENTATION = 0.0
         self.CANARD_TWO_ORIENTATION = 0.0
         self.CANARD_THREE_ORIENTATION = 0.0
@@ -86,14 +87,13 @@ class Rocket():
 
         return torque_x, torque_y
 
-"""Thought:should i also consider the slight distance from the z axis for canard torque or is that doing too much"""
-
     def canardTorqueCalc(self):
+        #canards 1 and 3 & 2 and 4 are across from one another so will have the same area as they'll have the same orientation
         canard_one_area   = self.CANARD_AREA * np.sin(self.CANARD_ONE_ORIENTATION)
         canard_two_area   = self.CANARD_AREA * np.sin(self.CANARD_TWO_ORIENTATION)
-        canard_three_area = self.CANARD_AREA * np.sin(self.CANARD_THREE_ORIENTATION)
-        canard_four_area  = self.CANARD_AREA * np.sin(self.CANARD_FOUR_ORIENTATION)
         #Am i going to put the PID straight into this function or make another
+
+        #I am only going to consider the relative windspeed in the z direction as when the PID is implemented the RWS in x and y will be small
 
 
     def changeInAngularVelocity(self, torque_x, torque_y):
@@ -138,7 +138,7 @@ class Rocket():
 
         self.VELOCITY_X += (a[0] + force_rotated[0] / self.MASS) * self.TIMESTEP
         self.VELOCITY_Y += (a[1] + force_rotated[1] / self.MASS) * self.TIMESTEP
-        self.VELOCITY_Z += a[2] * self.TIMESTEP + self.GRAVITY * self.TIMESTEP
+        self.VELOCITY_Z += (a[2] + self.GRAVITY) * self.TIMESTEP
         return self
     
     def changeInPosition(self):
@@ -188,19 +188,19 @@ def plotter_3D(x,y,z):
 
 
 """MAIN"""        
-    
-rocket = Rocket()
-rocket.getInputs()
-Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
-plotter_3D(Ps_X,Ps_Y,Ps_Z)
-#plotter_3D(Os_X,Os_Y,Os_Z)
+def main():    
+    rocket = Rocket()
+    rocket.getInputs()
+    Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
+    plotter_3D(Ps_X,Ps_Y,Ps_Z)
+    #plotter_3D(Os_X,Os_Y,Os_Z)
+
+main()
 
 """
 THIS IS JUST MY THOUGHTS
 Next steps:
 consider that the force may be reduced as it is hitting at an angle (unsure)
-consider the RWS in z direction (and different perpendicular distances in general?)
-Work on variable names
 
 
 """

@@ -175,7 +175,7 @@ class Rocket():
             
         return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z
         
-""" OTHER FUNCTIONS - 1 for now"""
+""" OTHER FUNCTIONS """
 
 def plotter_3D(x,y,z):
     fig = plt.figure(figsize=(12,8))
@@ -186,8 +186,12 @@ def plotter_3D(x,y,z):
     ax.set_zlabel('Z-axis')  
     plt.show()
 
+def Propotional():
+    return
+
 
 """MAIN"""        
+
 def main():    
     rocket = Rocket()
     rocket.getInputs()

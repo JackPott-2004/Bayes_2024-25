@@ -164,7 +164,7 @@ class Rocket():
         #
         X_trackerArray = np.empty()
         Y_trackerArray = np.empty()
-        NUM_ANGLES = 60
+        NUM_ANGLES = 120
         ANGLES_ARRAY = np.empty() 
         TORQUES_X = np.empty()
         TORQUES_Y = np.empty()
@@ -198,9 +198,13 @@ class Rocket():
                 if TORQUES_X[p] > 0:
                     np.delete(TORQUES_Y[p],p)
                     np.delete(Y_trackerArray[p],p)
-        return
 
-    def error(self):
+        X_TORQUES_SORTED = np.sort(TORQUES_X)
+        Y_TORQUES_SORTED = np.sort(TORQUES_Y)     
+        round_to = (0.8 * NUM_ANGLES) #Kameran said to take the "20th" best one is there was 100
+        return X_TORQUES_SORTED[round_to], Y_TORQUES_SORTED[round_to]
+
+    def error(self): #If i wanted to add a variable gain term - might not as if it works well it would be unneccessary
         DESIRED_AXIS = [0,0,1]
         AXIS = []
 
@@ -225,9 +229,10 @@ class Rocket():
             self.changeInVelocity()
             self.changeInPosition()
             Tx, Ty = self.torqueCalc()
-            CTx, CTy = self.canardTorqueCalc(self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION)
+            CTx, CTy = self.canardTorqueCalc_WithSetCanards(self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION)
             self.changeInAngularVelocity(Tx, Ty, CTx, CTy)
             self.changeInOrientation()
+            self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
             #if self.ORIENTATION_X > 0.3: there also would be one one of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP

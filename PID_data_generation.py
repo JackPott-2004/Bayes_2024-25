@@ -159,24 +159,24 @@ class Rocket():
         self.POSITION_Z += self.VELOCITY_Z * self.TIMESTEP
         return self
     
-    def Propotional(self,orientation_x, orientation_y):
+    def Proportional(self,orientation_x, orientation_y):
         """This proportional system will be made assumming it works well so doesn't need to handle "edge cases" - NOT TOO SURE WHAT I MEANT BY THIS """
         #
-        X_trackerArray = np.empty()
-        Y_trackerArray = np.empty()
         NUM_ANGLES = 120
-        ANGLES_ARRAY = np.empty() 
-        TORQUES_X = np.empty()
-        TORQUES_Y = np.empty()
+        X_trackerArray = np.empty(NUM_ANGLES)
+        Y_trackerArray = np.empty(NUM_ANGLES)
+        ANGLES_ARRAY = np.empty(NUM_ANGLES) 
+        TORQUES_X = np.empty(NUM_ANGLES)
+        TORQUES_Y = np.empty(NUM_ANGLES)
 
         for i in range(NUM_ANGLES):
-            ANGLES_ARRAY.append(-np.pi + np.pi * 2 * i / NUM_ANGLES)
-            X_trackerArray.append(i)
-            X_trackerArray.append(i) 
+            ANGLES_ARRAY[i] = (-np.pi + np.pi * 2 * i / NUM_ANGLES)
+            X_trackerArray[i] = i
+            Y_trackerArray[i] = i
         for j in range(NUM_ANGLES):
             tx, ty = self.canardTorqueCalc_WithSetCanards(ANGLES_ARRAY[j],ANGLES_ARRAY[j])
-            TORQUES_X.append(tx)
-            TORQUES_Y.append(ty)
+            TORQUES_X[j] = tx
+            TORQUES_Y[j] = ty
 
         if orientation_x < 0 :# may use np.sign here to reduce no. lines
             for m in range(NUM_ANGLES):
@@ -201,7 +201,7 @@ class Rocket():
 
         X_TORQUES_SORTED = np.sort(TORQUES_X)
         Y_TORQUES_SORTED = np.sort(TORQUES_Y)     
-        round_to = (0.8 * NUM_ANGLES) #Kameran said to take the "20th" best one is there was 100
+        round_to = round(0.2 * NUM_ANGLES) #Kameran said to take the "20th" best one is there was 100
         return X_TORQUES_SORTED[round_to], Y_TORQUES_SORTED[round_to]
 
     def error(self): #If i wanted to add a variable gain term - might not as if it works well it would be unneccessary
@@ -217,7 +217,10 @@ class Rocket():
         Ps_Z = []
         Os_X = []
         Os_Y = []
-        Os_Z = [] # Currently this has no use
+        Os_Z = [] 
+        xCanardAgles = []
+        yCanardAgles = []
+
         while (time < self.DURATION):
             Ps_X.append(self.POSITION_X)
             Ps_Y.append(self.POSITION_Y)
@@ -225,19 +228,20 @@ class Rocket():
             Os_X.append(self.ORIENTATION_X)
             Os_Y.append(self.ORIENTATION_Y) 
             Os_Z.append(self.ORIENTATION_Z) 
-            
+            xCanardAgles.append(self.CANARDS_X_ORIENTATION)
+            yCanardAgles.append(self.CANARDS_Y_ORIENTATION)
             self.changeInVelocity()
             self.changeInPosition()
             Tx, Ty = self.torqueCalc()
-            CTx, CTy = self.canardTorqueCalc_WithSetCanards(self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION)
+            CTx, CTy = self.canardTorqueCalc()
             self.changeInAngularVelocity(Tx, Ty, CTx, CTy)
             self.changeInOrientation()
-            self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
+            self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.Proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
             #if self.ORIENTATION_X > 0.3: there also would be one one of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP
             
-        return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z
+        return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z, xCanardAgles,yCanardAgles
         
 """ FUNCTIONS """
 
@@ -250,12 +254,18 @@ def plotter_3D(x,y,z):
     ax.set_zlabel('Z-axis')  
     plt.show()
 
+def plot_2d(x,y):
+    plt.plot(x,y)
+    plt.show
 
 """MAIN"""        
 def main():    
     rocket = Rocket()
     rocket.getInputs()
-    Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
-    plotter_3D(Ps_X,Ps_Y,Ps_Z)
+    Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z, XCA, YCA = rocket.execute()
+    #plotter_3D(Ps_X,Ps_Y,Ps_Z)
     #plotter_3D(Os_X,Os_Y,Os_Z)
+    plot_2d(XCA,YCA) #Not sure why it isnt showing the plot
+
 main()
+

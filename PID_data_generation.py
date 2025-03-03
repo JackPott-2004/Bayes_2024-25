@@ -10,7 +10,6 @@ you will be prompted for the wind speed in y direction
 the rockets trajectory will be plotted, it will show it being cocked into the wind
 optional - put a delay in when wind starts, variable wind speed with height
 
-
 """
  
 #The imports
@@ -28,7 +27,7 @@ class Rocket():
         self.MASS = 5
         self.GRAVITY = -9.81
         self.AREA = 0.2
-        self.TIMESTEP = 0.01
+        self.TIMESTEP = 0.1
         #From centre of pressure to the centre of gravity,Should cock into positive wind values
         self.DISTANCE = 0.2 
         #initially vertical
@@ -45,15 +44,12 @@ class Rocket():
         self.POSITION_X = 0.0
         self.POSITION_Y = 0.0
         self.POSITION_Z = 0.0
-        self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2)
+        self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2) # abitrary but maybe the wrong formula
         self.DRAG_CONSTANT = 0.3
         self.CANARD_AREA = 1
         self.CANARD_DISTANCE = 0.2
-        self.CANARD_ONE_ORIENTATION = 0.0
-        self.CANARD_TWO_ORIENTATION = 0.0
-        self.CANARD_THREE_ORIENTATION = 0.0
-        self.CANARD_FOUR_ORIENTATION = 0.0   
-         
+        self.CANARDS_X_ORIENTATION = 0.0  # 
+        self.CANARDS_Y_ORIENTATION = 0.0
         
     def getInputs(self):
         """This takes in values for the wind speed in X & Y directions and the duration of the flight"""
@@ -89,17 +85,33 @@ class Rocket():
 
     def canardTorqueCalc(self):
         #canards 1 and 3 & 2 and 4 are across from one another so will have the same area as they'll have the same orientation
-        canard_one_area   = self.CANARD_AREA * np.sin(self.CANARD_ONE_ORIENTATION)
-        canard_two_area   = self.CANARD_AREA * np.sin(self.CANARD_TWO_ORIENTATION)
-        #Am i going to put the PID straight into this function or make another
+        canards_X_area   = self.CANARD_AREA * np.sin(self.CANARDS_X_ORIENTATION + self.ORIENTATION_X) 
+        canards_Y_area   = self.CANARD_AREA * np.sin(self.CANARDS_Y_ORIENTATION  + self.ORIENTATION_Y) 
+        canardForce_x =  ((self.RWS_X)**2) * canards_X_area * self.DRAG_CONSTANT * np.sign(self.RWS_X)# this might wrong
+        canardForce_y =  ((self.RWS_Y)**2) * canards_Y_area * self.DRAG_CONSTANT * np.sign(self.RWS_Y)
+        canardForce_vector = np.array([canardForce_x, canardForce_y,0])
+        moment_arm =np.array([0, 0, -self.DISTANCE])
+        torque = np.cross(moment_arm, canardForce_vector)
+        canardTorque_x =  torque[0]
+        canardTorque_y =  torque[1]
+        return canardTorque_x, canardTorque_y
 
-        #I am only going to consider the relative windspeed in the z direction as when the PID is implemented the RWS in x and y will be small
+    def canardTorqueCalc_WithSetCanards(self,X_orientation, Y_orientation ):
+        canards_X_area   = self.CANARD_AREA * np.sin(X_orientation + Y_orientation) 
+        canards_Y_area   = self.CANARD_AREA * np.sin(self.CANARDS_Y_ORIENTATION  + self.ORIENTATION_Y) 
+        canardForce_x =  ((self.RWS_X)**2) * canards_X_area * self.DRAG_CONSTANT * np.sign(self.RWS_X)# this might wrong
+        canardForce_y =  ((self.RWS_Y)**2) * canards_Y_area * self.DRAG_CONSTANT * np.sign(self.RWS_Y)
+        canardForce_vector = np.array([canardForce_x, canardForce_y,0])
+        moment_arm =np.array([0, 0, -self.DISTANCE])
+        torque = np.cross(moment_arm, canardForce_vector)
+        canardTorque_x =  torque[0]
+        canardTorque_y =  torque[1]
+        return canardTorque_x, canardTorque_y
 
-
-    def changeInAngularVelocity(self, torque_x, torque_y):
+    def changeInAngularVelocity(self, torque_x, torque_y, canardTorque_x, canardTorque_y): # add canard torques here
         """This method finds the change (in radians per second) of the rockets angular velocities"""
-        self.ANGULAR_VELOCITY_X = self.TIMESTEP * torque_x / self.INERTIA
-        self.ANGULAR_VELOCITY_Y = self.TIMESTEP * torque_y / self.INERTIA
+        self.ANGULAR_VELOCITY_X = self.TIMESTEP * (torque_x + canardTorque_x) / self.INERTIA # here too
+        self.ANGULAR_VELOCITY_Y = self.TIMESTEP * (torque_y + canardTorque_y)/ self.INERTIA
         return self
 
     def changeInOrientation(self):
@@ -147,6 +159,52 @@ class Rocket():
         self.POSITION_Z += self.VELOCITY_Z * self.TIMESTEP
         return self
     
+    def Propotional(self,orientation_x, orientation_y):
+        """This proportional system will be made assumming it works well so doesn't need to handle "edge cases" - NOT TOO SURE WHAT I MEANT BY THIS """
+        #
+        X_trackerArray = np.empty()
+        Y_trackerArray = np.empty()
+        NUM_ANGLES = 60
+        ANGLES_ARRAY = np.empty() 
+        TORQUES_X = np.empty()
+        TORQUES_Y = np.empty()
+
+        for i in range(NUM_ANGLES):
+            ANGLES_ARRAY.append(-np.pi + np.pi * 2 * i / NUM_ANGLES)
+            X_trackerArray.append(i)
+            X_trackerArray.append(i) 
+        for j in range(NUM_ANGLES):
+            tx, ty = self.canardTorqueCalc_WithSetCanards(ANGLES_ARRAY[j],ANGLES_ARRAY[j])
+            TORQUES_X.append(tx)
+            TORQUES_Y.append(ty)
+
+        if orientation_x < 0 :# may use np.sign here to reduce no. lines
+            for m in range(NUM_ANGLES):
+                if TORQUES_X[m] < 0:
+                    np.delete(TORQUES_X[m],m)
+                    np.delete(X_trackerArray[m],m)
+        if orientation_x > 0 :# may use np.sign here to reduce no. lines
+            for n in range(NUM_ANGLES):
+                if TORQUES_X[n] > 0:
+                    np.delete(TORQUES_X[n],n)
+                    np.delete(X_trackerArray[n],n)
+        if orientation_y < 0 :# may use np.sign here to reduce no. lines
+            for o in range(NUM_ANGLES):
+                if TORQUES_X[o] < 0:
+                    np.delete(TORQUES_Y[o],o)
+                    np.delete(Y_trackerArray[o],o)
+        if orientation_y > 0 :# may use np.sign here to reduce no. lines
+            for p in range(NUM_ANGLES):
+                if TORQUES_X[p] > 0:
+                    np.delete(TORQUES_Y[p],p)
+                    np.delete(Y_trackerArray[p],p)
+        return
+
+    def error(self):
+        DESIRED_AXIS = [0,0,1]
+        AXIS = []
+
+        return
     
     def execute(self):
         time = 0
@@ -155,27 +213,28 @@ class Rocket():
         Ps_Z = []
         Os_X = []
         Os_Y = []
-        Os_Z = []
+        Os_Z = [] # Currently this has no use
         while (time < self.DURATION):
             Ps_X.append(self.POSITION_X)
             Ps_Y.append(self.POSITION_Y)
             Ps_Z.append(self.POSITION_Z)
             Os_X.append(self.ORIENTATION_X)
-            Os_Y.append(self.ORIENTATION_Y)
-            Os_Z.append(self.ORIENTATION_Z)
+            Os_Y.append(self.ORIENTATION_Y) 
+            Os_Z.append(self.ORIENTATION_Z) 
             
             self.changeInVelocity()
             self.changeInPosition()
             Tx, Ty = self.torqueCalc()
-            self.changeInAngularVelocity(Tx, Ty)
+            CTx, CTy = self.canardTorqueCalc(self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION)
+            self.changeInAngularVelocity(Tx, Ty, CTx, CTy)
             self.changeInOrientation()
-            #if self.ORIENTATION_X > 0.3: there also would be one i=of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
+            #if self.ORIENTATION_X > 0.3: there also would be one one of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP
             
         return Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z
         
-""" OTHER FUNCTIONS """
+""" FUNCTIONS """
 
 def plotter_3D(x,y,z):
     fig = plt.figure(figsize=(12,8))
@@ -186,25 +245,12 @@ def plotter_3D(x,y,z):
     ax.set_zlabel('Z-axis')  
     plt.show()
 
-def Propotional():
-    return
-
 
 """MAIN"""        
-
 def main():    
     rocket = Rocket()
     rocket.getInputs()
     Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z = rocket.execute()
     plotter_3D(Ps_X,Ps_Y,Ps_Z)
     #plotter_3D(Os_X,Os_Y,Os_Z)
-
 main()
-
-"""
-THIS IS JUST MY THOUGHTS
-Next steps:
-consider that the force may be reduced as it is hitting at an angle (unsure)
-
-
-"""

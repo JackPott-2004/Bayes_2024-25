@@ -1,7 +1,7 @@
 #Rocket Sim with wind
 
 """
-The rocket should never be more than ___ degrees from the vertical so
+The rocket should never be more than ___ degrees from the vertical 
 
 FINAL RESULT
 you will be prompted how long you'd like the rocket to fly for
@@ -65,7 +65,8 @@ class Rocket():
     def relativeWindSpeedCalc(self):
         self.RWS_X = self.VELOCITY_X - self.WSX  
         self.RWS_Y = self.VELOCITY_Y - self.WSY  
-        return self.RWS_X, self.RWS_Y
+        self.RWS_Z = self.VELOCITY_Z
+        return self
         
     def torqueCalc(self): 
         """This method calculates the torque on the rocket
@@ -80,6 +81,7 @@ class Rocket():
         force_vector = np.array([force_x, force_y,0])
         moment_arm =np.array([0, 0, -self.DISTANCE])
         torque = np.cross(moment_arm, force_vector)
+        print(torque)
         torque_x =  torque[0]
         torque_y =  torque[1]
 
@@ -100,8 +102,8 @@ class Rocket():
         return canardTorque_x, canardTorque_y
 
     def canardTorqueCalc_WithSetCanards(self,X_orientation, Y_orientation ):
-        canards_X_area   = self.CANARD_AREA * np.sin(X_orientation + Y_orientation) 
-        canards_Y_area   = self.CANARD_AREA * np.sin(self.CANARDS_Y_ORIENTATION  + self.ORIENTATION_Y) 
+        canards_X_area   = self.CANARD_AREA * np.sin(self.CANARDS_X_ORIENTATION  + self.ORIENTATION_X) * np.sin(self.ORIENTATION_Y)
+        canards_Y_area   = self.CANARD_AREA * np.sin(self.CANARDS_Y_ORIENTATION  + self.ORIENTATION_Y) * np.sin(self.ORIENTATION_X)
         canardForce_x =  ((self.RWS_X)**2) * canards_X_area * self.DRAG_CONSTANT * np.sign(self.RWS_X)# this might wrong
         canardForce_y =  ((self.RWS_Y)**2) * canards_Y_area * self.DRAG_CONSTANT * np.sign(self.RWS_Y)
         canardForce_vector = np.array([canardForce_x, canardForce_y,0])
@@ -111,7 +113,7 @@ class Rocket():
         canardTorque_y =  torque[1]
         return canardTorque_x, canardTorque_y
 
-    def changeInAngularVelocity(self, torque_x, torque_y, canardTorque_x, canardTorque_y): # add canard torques here
+    def changeInAngularVelocity(self, torque_x, torque_y, canardTorque_x, canardTorque_y):
         """This method finds the change (in radians per second) of the rockets angular velocities"""
         self.ANGULAR_VELOCITY_X = self.TIMESTEP * (torque_x + canardTorque_x) / self.INERTIA # here too
         self.ANGULAR_VELOCITY_Y = self.TIMESTEP * (torque_y + canardTorque_y)/ self.INERTIA
@@ -124,6 +126,8 @@ class Rocket():
         return self
     
     #Is this method of numerical integration alright?
+    #What method is it
+    #euler,euler - cromer?
     def changeInVelocity(self):
         #2 components - acceleration from rocket and acceleration from relative wind speed
         ACCEL_VERT = 30
@@ -163,49 +167,50 @@ class Rocket():
         return self
     
     def Proportional(self,orientation_x, orientation_y):
-        """This proportional system will be made assumming it works well so doesn't need to handle "edge cases" - NOT TOO SURE WHAT I MEANT BY THIS """
-        #
-        NUM_ANGLES = 120
-        X_trackerArray = np.empty(NUM_ANGLES)
-        Y_trackerArray = np.empty(NUM_ANGLES)
-        ANGLES_ARRAY = np.empty(NUM_ANGLES) 
-        TORQUES_X = np.empty(NUM_ANGLES)
-        TORQUES_Y = np.empty(NUM_ANGLES)
+        if orientation_x == 0 and orientation_y == 0:
+            return 0, 0
+        else:
+            NUM_ANGLES = 120
+            X_trackerArray = np.empty(NUM_ANGLES)
+            Y_trackerArray = np.empty(NUM_ANGLES)
+            ANGLES_ARRAY = np.empty(NUM_ANGLES) 
+            TORQUES_X = np.empty(NUM_ANGLES)
+            TORQUES_Y = np.empty(NUM_ANGLES)
 
-        for i in range(NUM_ANGLES):
-            ANGLES_ARRAY[i] = (-np.pi + np.pi * 2 * i / NUM_ANGLES)
-            X_trackerArray[i] = i
-            Y_trackerArray[i] = i
-        for j in range(NUM_ANGLES):
-            tx, ty = self.canardTorqueCalc_WithSetCanards(ANGLES_ARRAY[j],ANGLES_ARRAY[j])
-            TORQUES_X[j] = tx
-            TORQUES_Y[j] = ty
+            for i in range(NUM_ANGLES):
+                ANGLES_ARRAY[i] = (-np.pi + np.pi * 2 * i / NUM_ANGLES)
+                X_trackerArray[i] = i
+                Y_trackerArray[i] = i
+            for j in range(NUM_ANGLES):
+                tx, ty = self.canardTorqueCalc_WithSetCanards(ANGLES_ARRAY[j],ANGLES_ARRAY[j])
+                TORQUES_X[j] = tx
+                TORQUES_Y[j] = ty
 
-        if orientation_x < 0 :# may use np.sign here to reduce no. lines
-            for m in range(NUM_ANGLES):
-                if TORQUES_X[m] < 0:
-                    np.delete(TORQUES_X[m],m)
-                    np.delete(X_trackerArray[m],m)
-        if orientation_x > 0 :# may use np.sign here to reduce no. lines
-            for n in range(NUM_ANGLES):
-                if TORQUES_X[n] > 0:
-                    np.delete(TORQUES_X[n],n)
-                    np.delete(X_trackerArray[n],n)
-        if orientation_y < 0 :# may use np.sign here to reduce no. lines
-            for o in range(NUM_ANGLES):
-                if TORQUES_X[o] < 0:
-                    np.delete(TORQUES_Y[o],o)
-                    np.delete(Y_trackerArray[o],o)
-        if orientation_y > 0 :# may use np.sign here to reduce no. lines
-            for p in range(NUM_ANGLES):
-                if TORQUES_X[p] > 0:
-                    np.delete(TORQUES_Y[p],p)
-                    np.delete(Y_trackerArray[p],p)
+            if orientation_x < 0 :# may use np.sign here to reduce no. lines
+                for m in range(NUM_ANGLES):
+                    if TORQUES_X[m] > 0:
+                        np.delete(TORQUES_X[m],m)
+                        np.delete(X_trackerArray[m],m)
+            if orientation_x > 0 :# may use np.sign here to reduce no. lines
+                for n in range(NUM_ANGLES):
+                    if TORQUES_X[n] < 0:
+                        np.delete(TORQUES_X[n],n)
+                        np.delete(X_trackerArray[n],n)
+            if orientation_y < 0 :# may use np.sign here to reduce no. lines
+                for o in range(NUM_ANGLES):
+                    if TORQUES_X[o] < 0:
+                        np.delete(TORQUES_Y[o],o)
+                        np.delete(Y_trackerArray[o],o)
+            if orientation_y > 0 :# may use np.sign here to reduce no. lines
+                for p in range(NUM_ANGLES):
+                    if TORQUES_X[p] > 0:
+                        np.delete(TORQUES_Y[p],p)
+                        np.delete(Y_trackerArray[p],p)
 
-        X_TORQUES_SORTED = np.sort(TORQUES_X)
-        Y_TORQUES_SORTED = np.sort(TORQUES_Y)     
-        round_to = round(0.2 * NUM_ANGLES) #Kameran said to take the "20th" best one is there was 100
-        return X_TORQUES_SORTED[round_to], Y_TORQUES_SORTED[round_to]
+            X_TORQUES_SORTED = np.sort(TORQUES_X)
+            Y_TORQUES_SORTED = np.sort(TORQUES_Y)     
+            round_to = round(0.8 * NUM_ANGLES) #Kameran said to take the "20th" best one is there was 100
+            return X_TORQUES_SORTED[-1], Y_TORQUES_SORTED[-1]
 
     def error(self): #If i wanted to add a variable gain term - might not as if it works well it would be unneccessary
         DESIRED_AXIS = [0,0,1]
@@ -265,11 +270,18 @@ def plot_2d(x,y):
 def main():    
     rocket = Rocket()
     rocket.getInputs()
-    times = np.linspace(0,rocket.DURATION,rocket.DURATION/rocket.TIMESTEP)
+    times = np.linspace(0,rocket.DURATION,int(rocket.DURATION/rocket.TIMESTEP)+1)
     Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z, XCA, YCA = rocket.execute()
-    #plotter_3D(Ps_X,Ps_Y,Ps_Z)
+    plotter_3D(Ps_X,Ps_Y,Ps_Z)
     #plotter_3D(Os_X,Os_Y,Os_Z)
-    plot_2d(XCA,times) #Not sure why it isnt showing the plot
-
+    #plot_2d(XCA,times) #Not sure why it isnt showing the plot
+    #plot_2d(Os_Y,times)
 main()
 
+"""
+BIG STEPS TO TAKE
+
+experiment with inheritance
+
+
+"""

@@ -23,31 +23,23 @@ from scipy.spatial.transform import Rotation as R
 class Rocket():
     
     def __init__(self):
+        #The intrinsics
         self.LENGTH = 1.0
         self.MASS = 5
         self.GRAVITY = -9.81
         self.AREA = 0.2
         self.TIMESTEP = 0.1
-        #From centre of pressure to the centre of gravity,Should cock into positive wind values
-        self.DISTANCE = 0.2 
-        #initially vertical
-        #Maybe I should put all of these into arrays
-        self.ORIENTATION_X = 0.0 #radians
-        self.ORIENTATION_Y = 0.0 #radians
-        self.ORIENTATION_Z = 0.0 #radians
-        self.ANGULAR_VELOCITY_X = 0.0
-        self.ANGULAR_VELOCITY_Y = 0.0
-        self.ANGULAR_VELOCITY_Z = 0.0
-        self.VELOCITY_X = 0.0
-        self.VELOCITY_Y = 0.0
-        self.VELOCITY_Z = 0.0
-        self.POSITION_X = 0.0
-        self.POSITION_Y = 0.0
-        self.POSITION_Z = 0.0
-        self.INERTIA = (1/12) * self.MASS * ((self.LENGTH)**2) # abitrary but maybe the wrong formula
+        self.DISTANCE = 0.2
+        self.INERTIA = 0.1
         self.DRAG_CONSTANT = 0.3
         self.CANARD_AREA = 1
-        self.CANARD_DISTANCE = 0.2
+        self.CANARD_DISTANCE = 0.2 
+        #variable ones
+        self.ORIENTATIONS = np.zeros(3)
+        self.ANGULAR_VELOCITies = np.zeros(3)
+        self.VELOCITIES = np.zeros(3)
+        self.POSITIONS = np.zeros(3)
+       
         self.CANARDS_X_ORIENTATION = 0.0  # 
         self.CANARDS_Y_ORIENTATION = 0.0
         
@@ -57,7 +49,7 @@ class Rocket():
         #self.WSX = -float(input("What is the windspeed in the X direction: "))
         #self.WSY = -float(input("What is the windspeed in the Y direction: "))
         #self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
-        self.WSX = -10
+        self.WSX = -10 #For ease of testing
         self.WSY = 0
         self.DURATION = 10
         return self
@@ -133,8 +125,8 @@ class Rocket():
         ACCEL_VERT = 30
         accel_array = [0,0,ACCEL_VERT]
 
-        theta = self.ORIENTATION_X
-        phi   = self.ORIENTATION_Y
+        theta = self.ORIENTATIONS[0]
+        phi   = self.ORIENTATIONS[1]
 
         axis_x = np.array([1,0,0])
         axis_y = np.array([0,1,0])
@@ -145,8 +137,8 @@ class Rocket():
         total_rotation = q_x * q_y
         a = total_rotation.apply(accel_array)
 
-        crossSectionalArea_X = self.AREA * (np.cos(self.ORIENTATION_X)) 
-        crossSectionalArea_Y = self.AREA * (np.cos(self.ORIENTATION_Y))
+        crossSectionalArea_X = self.AREA * (np.cos(theta)) 
+        crossSectionalArea_Y = self.AREA * (np.cos(phi))
         
         self.relativeWindSpeedCalc()
         force_X =  ((self.RWS_X)**2) * crossSectionalArea_X * self.DRAG_CONSTANT
@@ -155,9 +147,9 @@ class Rocket():
         force_array = np.array([force_X, force_Y,0])
         force_rotated = total_rotation.apply(force_array)
 
-        self.VELOCITY_X += (a[0] + force_rotated[0] / self.MASS) * self.TIMESTEP
-        self.VELOCITY_Y += (a[1] + force_rotated[1] / self.MASS) * self.TIMESTEP
-        self.VELOCITY_Z += (a[2] + self.GRAVITY) * self.TIMESTEP
+        self.VELOCITIES[0]+= (a[0] + force_rotated[0] / self.MASS) * self.TIMESTEP
+        self.VELOCITIES[] += (a[1] + force_rotated[1] / self.MASS) * self.TIMESTEP
+        self.VELOCITIES[] += (a[2] + self.GRAVITY) * self.TIMESTEP
         return self
     
     def changeInPosition(self):
@@ -220,16 +212,13 @@ class Rocket():
     
     def execute(self):
         time = 0
-        Ps_X = []
-        Ps_Y = []
-        Ps_Z = []
-        Os_X = []
-        Os_Y = []
-        Os_Z = [] 
+        Ps = np.zeroes(3)
+        Os = np.zeroes(3) 
         xCanardAgles = []
         yCanardAgles = []
 
         while (time < self.DURATION):
+
             Ps_X.append(self.POSITION_X)
             Ps_Y.append(self.POSITION_Y)
             Ps_Z.append(self.POSITION_Z)
@@ -280,6 +269,7 @@ main()
 
 """
 BIG STEPS TO TAKE
+migrate variables to arrays
 
 experiment with inheritance
 

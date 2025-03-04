@@ -54,9 +54,12 @@ class Rocket():
     def getInputs(self):
         """This takes in values for the wind speed in X & Y directions and the duration of the flight"""
         #These wind speeds are what is coming at the rocket
-        self.WSX = -float(input("What is the windspeed in the X direction: "))
-        self.WSY = -float(input("What is the windspeed in the Y direction: "))
-        self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
+        #self.WSX = -float(input("What is the windspeed in the X direction: "))
+        #self.WSY = -float(input("What is the windspeed in the Y direction: "))
+        #self.DURATION = int(input("How many seconds would you like the rocket to fly for: "))
+        self.WSX = -10
+        self.WSY = 0
+        self.DURATION = 10
         return self
         
     def relativeWindSpeedCalc(self):
@@ -236,7 +239,7 @@ class Rocket():
             CTx, CTy = self.canardTorqueCalc()
             self.changeInAngularVelocity(Tx, Ty, CTx, CTy)
             self.changeInOrientation()
-            #self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.Proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
+            self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.Proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
             #if self.ORIENTATION_X > 0.3: there also would be one one of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP
@@ -255,17 +258,18 @@ def plotter_3D(x,y,z):
     plt.show()
 
 def plot_2d(x,y):
-    plt.plot(x,y)
-    plt.show
+    plt.plot(x,y, marker='o', linestyle='-', color='b', label='Line 1')
+    plt.show()
 
 """MAIN"""        
 def main():    
     rocket = Rocket()
     rocket.getInputs()
+    times = np.linspace(0,rocket.DURATION,rocket.DURATION/rocket.TIMESTEP)
     Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z, XCA, YCA = rocket.execute()
-    plotter_3D(Ps_X,Ps_Y,Ps_Z)
+    #plotter_3D(Ps_X,Ps_Y,Ps_Z)
     #plotter_3D(Os_X,Os_Y,Os_Z)
-    #plot_2d(XCA,YCA) #Not sure why it isnt showing the plot
+    plot_2d(XCA,times) #Not sure why it isnt showing the plot
 
 main()
 

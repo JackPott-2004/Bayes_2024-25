@@ -236,7 +236,7 @@ class Rocket():
             CTx, CTy = self.canardTorqueCalc()
             self.changeInAngularVelocity(Tx, Ty, CTx, CTy)
             self.changeInOrientation()
-            self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.Proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
+            #self.CANARDS_X_ORIENTATION, self.CANARDS_Y_ORIENTATION = self.Proportional(self.ORIENTATION_X, self.ORIENTATION_Y)
             #if self.ORIENTATION_X > 0.3: there also would be one one of these IFs for the y axis, as we aren't allowed to control the rocket when it is out of control
                 #time = self.DURATION
             time += self.TIMESTEP
@@ -263,9 +263,9 @@ def main():
     rocket = Rocket()
     rocket.getInputs()
     Ps_X, Ps_Y, Ps_Z, Os_X, Os_Y, Os_Z, XCA, YCA = rocket.execute()
-    #plotter_3D(Ps_X,Ps_Y,Ps_Z)
+    plotter_3D(Ps_X,Ps_Y,Ps_Z)
     #plotter_3D(Os_X,Os_Y,Os_Z)
-    plot_2d(XCA,YCA) #Not sure why it isnt showing the plot
+    #plot_2d(XCA,YCA) #Not sure why it isnt showing the plot
 
 main()
 

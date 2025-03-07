@@ -7,3 +7,20 @@ make a class to compute the simulation
 
 
 """
+
+class Rocket():
+
+
+
+
+
+
+class canard():
+
+
+class execute():
+    
+    def __init__(self):
+        self.POSITIONS = [[],[],[]]
+        self.VELOCITIES = [[],[],[]]
+        self. 

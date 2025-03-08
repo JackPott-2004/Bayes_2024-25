@@ -7,9 +7,10 @@ as we have data on the rockets
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 import json
 
-timestep = 1
+timestep = 0.1
 
 orientation_x = []
 orientation_y = []
@@ -19,7 +20,7 @@ linAccel_y = []
 linAccel_z = []
 
 #read the data from the CSV file
-with open('datalog-1.json') as file:
+with open('combined.json') as file:
     for line in file:
         line = line.strip()
 
@@ -89,8 +90,9 @@ a_y = []
 a_z = []
 
 
-def placeholder():
+def placeholder(linAccel_x,linAccel_y, linAccel_z):
     for i in range(size):
+        """
         theta = float(orientation_x[i])
         phi   = float(orientation_y[i])
         
@@ -107,12 +109,27 @@ def placeholder():
                                    [-1 * np.sin(phi), 0 , np.cos(phi)]])
 
         rotation_total = np.dot(rotation_pitch, rotation_yaw)
+        """
         
-        a_prime = np.array([[accel_x], [accel_y], [accel_z]])
-        a = np.dot(rotation_total, a_prime)
-        a_x.append(float(a[0][0]))
-        a_y.append(float(a[1][0]))
-        a_z.append(float(a[2][0]))
+        accel_array = np.array([linAccel_x[i], linAccel_y[i], linAccel_z[i]])
+
+        theta = orientation_x[i]
+        phi   = orientation_y[i]
+
+        axis_x = np.array([1,0,0])
+        axis_y = np.array([0,1,0])
+
+        q_x = R.from_rotvec(theta * axis_x)
+        q_y = R.from_rotvec(phi * axis_y)
+
+        total_rotation = q_x * q_y
+        a = total_rotation.apply(accel_array) 
+              
+        #a_prime = np.array([linAccel_x, linAccel_y, linAccel_z])
+        a =  total_rotation.apply(accel_array)
+        a_x.append(float(a[0]))
+        a_y.append(float(a[1]))
+        a_z.append(float(a[2]))
     return a_x, a_y, a_z
 
 def changeInSpeed(acceleration):
@@ -173,7 +190,7 @@ def plotter_3D(x,y,z):
     plt.show()
 
 def main():
-    ax, ay, az = placeholder()
+    ax, ay, az = placeholder(linAccel_x, linAccel_y, linAccel_z)
     vx, vy, vz    = velocitySum(ax, ay, az)
     px, py, pz    = positionSum(vx, vy, vz, ax, ay, az)
     plotter_3D(px,py,pz)

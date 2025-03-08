@@ -119,9 +119,6 @@ class Rocket():
         self.ORIENTATIONS[1] += self.ANGULAR_VELOCITY_Y * self.TIMESTEP
         return self
     
-    #Is this method of numerical integration alright?
-    #What method is it
-    #euler,euler - cromer?
     def changeInVelocity(self):
         ACCEL_VERT = 30
         accel_array = [0,0,ACCEL_VERT]

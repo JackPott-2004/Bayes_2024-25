@@ -7,22 +7,40 @@ as we have data on the rockets
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
-
-file  = "f.txt"
+import json
 
 timestep = 1
 
-columns = [[] for _ in range(29)]
+orientation_x = []
+orientation_y = []
+orientation_z = []
+linAccel_x = []
+linAccel_y = []
+linAccel_z = []
 
 #read the data from the CSV file
-with open(file,"r") as file:
-    lines = file.readlines()
-    line_count = len(lines)
-    for line in lines:
-        values = line.strip().split(',')
-        for i in range(len(values)):
-            columns[i].append(values[i])
+with open('datalog-1.json') as file:
+    for line in file:
+        line = line.strip()
 
+        if not line:
+            continue
+
+        try:
+            line = line.replace('"altitude": }', '"altitude": null}')
+            rocket_parameters = json.loads(line) #json.load(file)
+            orientation_x.append(rocket_parameters["bno055"]["orientation"]["x"])
+            orientation_y.append(rocket_parameters['bno055']["orientation"]["y"])
+            orientation_z.append(rocket_parameters['bno055']["orientation"]["z"])
+            linAccel_x.append(rocket_parameters['bno055']["linear_acceleration"]["x"])
+            linAccel_y.append(rocket_parameters['bno055']["linear_acceleration"]["y"])
+            linAccel_z.append(rocket_parameters['bno055']["linear_acceleration"]["z"])
+
+        except json.JSONDecodeError as e:
+            print(f"JSON Decode Error: {e} in line: {line}")  # Debugging
+
+    #return orientation_x, orientation_y, orientation_z, linAccel_x, linAccel_y, linAccel_z
+"""
 #BNO055
 times = columns[0]
 orientation_x = columns[1]
@@ -54,7 +72,7 @@ sensorData_pres = columns[25]
 #BMP280
 BMP280Temp = columns[26]
 BMP280Pres = columns[27]
-BMP280Alt  = columns[28]
+BMP280Alt  = columns[28]"""
 
 size = len(orientation_x)
 
@@ -144,10 +162,11 @@ def plotter_3D(x,y,z):
     ax = fig.add_subplot(111, projection='3d')
     
     ax.plot3D(x,y,z, linewidth=5)
-
+    """
     ax.set_xlim(0, 50)  # Adjust X-axis range
     ax.set_ylim(0, 50)  # Adjust Y-axis rang
     ax.set_zlim(0, 125)  # Adjust Z-axis range
+    """
     ax.set_xlabel('X-axis') 
     ax.set_ylabel('Y-axis')  
     ax.set_zlabel('Z-axis')  

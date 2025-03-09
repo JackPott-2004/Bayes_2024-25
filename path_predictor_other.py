@@ -33,9 +33,9 @@ with open('combined.json') as file:
             orientation_x.append(rocket_parameters["bno055"]["orientation"]["x"])
             orientation_y.append(rocket_parameters['bno055']["orientation"]["y"])
             orientation_z.append(rocket_parameters['bno055']["orientation"]["z"])
-            linAccel_x.append(rocket_parameters['bno055']["linear_acceleration"]["x"])
-            linAccel_y.append(rocket_parameters['bno055']["linear_acceleration"]["y"])
-            linAccel_z.append(rocket_parameters['bno055']["linear_acceleration"]["z"])
+            linAccel_x.append(rocket_parameters['bno055']["accelerometer"]["x"])
+            linAccel_y.append(rocket_parameters['bno055']["accelerometer"]["y"])
+            linAccel_z.append(rocket_parameters['bno055']["accelerometer"]["z"])
 
         except json.JSONDecodeError as e:
             print(f"JSON Decode Error: {e} in line: {line}")  # Debugging

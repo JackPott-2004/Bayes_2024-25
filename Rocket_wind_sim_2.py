@@ -84,17 +84,20 @@ class Canard():
         torque_x = torque[0]
         torque_y = torque[1]
         return torque_x, torque_y
-    
+    """
     def desiredTorque(self,error):
-        gain = 1 # in units od torquwe
+        gain = 1 # in units of torque, currently arbritrary
         desired_torque = [error[0] * gain, error[1] * gain]
-        return 
-    def finAngleForTorque(self,):
+        return desired_torque
+    """
+    def setCanardAngle(self, desired_torque):
         """This method finds a angle angle for the canard to be at to create the wanted torque"""
-        """Start with only in 1 axis then move on"""
-
+        self.ORIENTATIONS[0] =np.arccos(desired_torque )
 
     def ProportionalMain(self,error):
+        
+        
+        """"""
 
         proportional_change = 0
         return proportional_change
@@ -138,9 +141,6 @@ class execute():
         return a
 
     def windForce(self):
-        """
-        What does this even do
-        """
         theta = self.ORIENTATIONS[0]
         phi = self.ORIENTATIONS[1]
 
@@ -161,7 +161,6 @@ class execute():
     def rotatedThrust(self):
         accel_array = [0,0,self.rocket.THRUST]
         rotated = self.rotateToRocketsAxis(accel_array)
-        print(rotated)
         return rotated
 
     def changeInVelocity(self):
@@ -207,32 +206,34 @@ class execute():
         Vs = [[],[],[]]
         AVs = [[],[]]
         time = 0
-        while time < self.DURATION:
-            Ps[0].append(self.POSITIONS[0])
-            Ps[1].append(self.POSITIONS[1])
-            Ps[2].append(self.POSITIONS[2])
-            Os[0].append(self.ORIENTATIONS[0])
-            Os[1].append(self.ORIENTATIONS[1]) 
-            #print(self.ORIENTATIONS[1])
-            Vs[0].append(self.VELOCITIES[0]) 
-            Vs[1].append(self.VELOCITIES[1]) 
-            Vs[2].append(self.VELOCITIES[2]) 
-            AVs[0].append(self.ANGULAR_VELOCITIES[0]) 
-            AVs[1].append(self.ANGULAR_VELOCITIES[1]) 
-            #print(self.ANGULAR_VELOCITIES[1])
+        for i in range(2)
+            while time < self.DURATION:
+                Ps[0].append(self.POSITIONS[0])
+                Ps[1].append(self.POSITIONS[1])
+                Ps[2].append(self.POSITIONS[2])
+                Os[0].append(self.ORIENTATIONS[0])
+                Os[1].append(self.ORIENTATIONS[1]) 
+                #print(self.ORIENTATIONS[1])
+                Vs[0].append(self.VELOCITIES[0]) 
+                Vs[1].append(self.VELOCITIES[1]) 
+                Vs[2].append(self.VELOCITIES[2]) 
+                AVs[0].append(self.ANGULAR_VELOCITIES[0]) 
+                AVs[1].append(self.ANGULAR_VELOCITIES[1]) 
+                #print(self.ANGULAR_VELOCITIES[1])
 
 
-            self.changeInPosition()
-            self.changeInOrientation()
-            self.changeInVelocity()
-            self.relativeWindSpeedCalc()
-            RWS = [self.RWS[0], self.RWS[1], self.RWS[2]]
-            RTx, RTy = self.rocket.windTorqueCalc(self.ORIENTATIONS, RWS)
-            CTx, CTy = self.canard.canardTorqueCalc(RWS, self.ORIENTATIONS)
-            self.changeInAngularVelocity(RTx, RTy,CTx, CTy)
-            self.canard.ProportionalMain
+                self.changeInPosition()
+                self.changeInOrientation()
+                self.changeInVelocity()
+                self.relativeWindSpeedCalc()
+                RWS = [self.RWS[0], self.RWS[1], self.RWS[2]]
+                RTx, RTy = self.rocket.windTorqueCalc(self.ORIENTATIONS, RWS)
+                CTx, CTy = self.canard.canardTorqueCalc(RWS, self.ORIENTATIONS)
+                self.changeInAngularVelocity(RTx, RTy,CTx, CTy)
+                self.canard.ProportionalMain
 
-            time += self.TIMESTEP
+                time += self.TIMESTEP
+            self.rocket.THRUST = 0
         
         return Ps, Os, Vs, AVs
 

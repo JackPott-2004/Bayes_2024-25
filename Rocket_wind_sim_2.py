@@ -37,60 +37,67 @@ class Rocket():
         force_y =  ((RWS[1])**2) * crossSectionalArea_y * self.DRAG_CONSTANT * np.sign(RWS[1])
         #force_z =  ((self.RWS[2])**2) * crossSectionalArea_z * self.DRAG_CONSTANT * np.sign(self.RWS[2])
         force_vector = np.array([force_x, force_y,0])
+        #print(force_y)
         moment_arm =np.array([0, 0, -self.DISTANCE])
         torque = np.cross(moment_arm, force_vector)
         torque_x =  torque[0]
         torque_y =  torque[1]
+        print(f"The wind torques are in x {torque_x} and in y {torque_y}")
 
         return torque_x, torque_y
     
-    
-    
-
-
 class Canard():
     
     def __init__(self):
         self.CANARD_AREA = 0.04
         self.CANARD_DISTANCE = 0.2 
         self.CANARD_RADIUS = 0.2
-        self.CANARD_VECTORS = [[self.CANARD_RADIUS,0,self.CANARD_DISTANCE], # right x one
-                               [0,self.CANARD_RADIUS,self.CANARD_DISTANCE], # the top y one 
-                               [-self.CANARD_RADIUS,0,self.CANARD_DISTANCE], # the left x one 
-                               [0,self.CANARD_RADIUS,self.CANARD_DISTANCE]] # the bottom y one
         self.CANARD_FORCE = [0,0]
         self.ORIENTATIONS = [0,0] 
-
-    def updateCanardOrienatations(self,orientations):
-        self.ORIENTATIONS[0] += orientations[0]
-        self.ORIENTATIONS[1] += orientations[1]
-
-    def canardTorqueCalc(self,RWS):
+    
+    def updateCanardOrienatations(self, proportional_change):
+        self.ORIENTATIONS[0] += proportional_change[0]
+        self.ORIENTATIONS[1] += proportional_change[1]
+    
+    def canardTorqueCalc(self,RWS_transformed,orientations):
+        self.updateCanardOrienatations(orientations) # this is here till the PID is done
         area = self.CANARD_AREA
-        area_X_LAT = area * np.cos(self.ORIENTATIONS[0])
-        area_X_VERT = area * np.sin(self.ORIENTATIONS[0])
-        area_Y_LAT = area * np.cos(self.ORIENTATIONS[1])
-        area_Y_VERT = area * np.sin(self.ORIENTATIONS[1])
-        forceOnXCanard_LAT = area_X_LAT * RWS[0]**2
-        forceOnYCanard_LAT = area_Y_LAT * RWS[1]**2
-        forceOnXCanard_VERT = area_X_VERT * RWS[2]**2
-        forceOnYCanard_VERT = area_Y_VERT * RWS[2]**2
-        torque_x = (forceOnXCanard_LAT + forceOnYCanard_VERT) * self.CANARD_DISTANCE 
-        torque_y = (forceOnYCanard_LAT + forceOnXCanard_VERT) * self.CANARD_DISTANCE 
+        area_X = area * np.abs(np.cos(orientations[1] - self.ORIENTATIONS[0]))
+        area_Y = area * np.abs(np.cos(orientations[1] - self.ORIENTATIONS[1]))
+        area_ZX = area * np.abs(np.sin(orientations[1] - self.ORIENTATIONS[0]))
+        area_ZY = area * np.abs(np.sin(orientations[1] - self.ORIENTATIONS[1]))
+
+        forceOnXCanard_LAT = area_X * RWS_transformed[0]**2 * np.sign(RWS_transformed[0])
+        forceOnYCanard_LAT = area_Y * RWS_transformed[1]**2 * np.sign(RWS_transformed[1])
+        #print(f"the RWS in is {RWS[1]}")
+        forceOnXCanard_VERT = area_ZX * RWS_transformed[2]**2 * np.sign(RWS_transformed[2])
+        forceOnYCanard_VERT = area_ZY * RWS_transformed[2]**2 * np.sign(RWS_transformed[2])
+        """
+        print(f"the force on x lat is {forceOnXCanard_LAT}")
+        print(f"the force on y lat is {forceOnYCanard_LAT}")
+        print(f"the force on x vert is {forceOnXCanard_VERT}")
+        print(f"the force on y ver is {forceOnYCanard_VERT}")
+        """
+        force_vector = np.array([forceOnXCanard_LAT, forceOnYCanard_LAT, (forceOnYCanard_VERT + forceOnXCanard_VERT)])
+        moment_arm =np.array([0, 0, -self.CANARD_DISTANCE])
+        torque = np.cross(moment_arm, force_vector)
+        torque_x = torque[0]
+        torque_y = torque[1]
         return torque_x, torque_y
     
     def desiredTorque(self,error):
         gain = 1 # in units od torquwe
         desired_torque = [error[0] * gain, error[1] * gain]
         return 
-    def finAngleForTorque(self):
+    def finAngleForTorque(self,):
         """This method finds a angle angle for the canard to be at to create the wanted torque"""
         """Start with only in 1 axis then move on"""
 
 
+    def ProportionalMain(self,error):
 
-
-        return
+        proportional_change = 0
+        return proportional_change
     
 class execute():
 
@@ -113,7 +120,7 @@ class execute():
     def relativeWindSpeedCalc(self):
         RWS_X = self.VELOCITIES[0] - self.WS[0]
         RWS_Y = self.VELOCITIES[1] - self.WS[1]
-        RWS_Z = self.VELOCITIES[2] - self.WS[2]
+        RWS_Z = self.VELOCITIES[2] -  self.WS[2]
         self.RWS = [RWS_X, RWS_Y, RWS_Z]
 
     def rotateToRocketsAxis(self,array):
@@ -151,9 +158,10 @@ class execute():
 
         return wind_force
 
-    def rotatedThrust(self, ):
+    def rotatedThrust(self):
         accel_array = [0,0,self.rocket.THRUST]
         rotated = self.rotateToRocketsAxis(accel_array)
+        print(rotated)
         return rotated
 
     def changeInVelocity(self):
@@ -177,6 +185,7 @@ class execute():
         self.ANGULAR_VELOCITIES[0] = self.TIMESTEP * (torque_x + canard_torque_x) / self.rocket.INERTIA # here too
         self.ANGULAR_VELOCITIES[1] = self.TIMESTEP * (torque_y + canard_torque_y)/  self.rocket.INERTIA
         return self
+        
 
     def changeInOrientation(self):
         """This method finds the change (in radians) of the rockets oreintation"""
@@ -189,7 +198,7 @@ class execute():
         desired = [0,0]
         actual = [self.ORIENTATIONS[0],self.ORIENTATIONS[1]]
         error[0] = desired[0] - actual[0]
-        error[1] = desired[1] - actual[0]
+        error[1] = desired[1] - actual[1]
         return error
 
     def simulate(self):
@@ -204,21 +213,24 @@ class execute():
             Ps[2].append(self.POSITIONS[2])
             Os[0].append(self.ORIENTATIONS[0])
             Os[1].append(self.ORIENTATIONS[1]) 
+            #print(self.ORIENTATIONS[1])
             Vs[0].append(self.VELOCITIES[0]) 
             Vs[1].append(self.VELOCITIES[1]) 
             Vs[2].append(self.VELOCITIES[2]) 
             AVs[0].append(self.ANGULAR_VELOCITIES[0]) 
             AVs[1].append(self.ANGULAR_VELOCITIES[1]) 
+            #print(self.ANGULAR_VELOCITIES[1])
 
 
             self.changeInPosition()
             self.changeInOrientation()
             self.changeInVelocity()
-            
-            RWS = [self.RWS[0], self.RWS[1]]
+            self.relativeWindSpeedCalc()
+            RWS = [self.RWS[0], self.RWS[1], self.RWS[2]]
             RTx, RTy = self.rocket.windTorqueCalc(self.ORIENTATIONS, RWS)
-            CTx, CTy = self.canard.canardTorqueCalc(self.ORIENTATIONS)
+            CTx, CTy = self.canard.canardTorqueCalc(RWS, self.ORIENTATIONS)
             self.changeInAngularVelocity(RTx, RTy,CTx, CTy)
+            self.canard.ProportionalMain
 
             time += self.TIMESTEP
         
@@ -247,8 +259,6 @@ def main():
     Ps, Os, Vs, AVs= system.simulate()
     length = len(Ps[0])
     times = np.linspace(0,10,int(10/system.TIMESTEP))
-    #plotter_3D(Os[0], Ps[1], times)
-    #plot_2d(Os[1], times)
-    plot_2d(AVs[1],times)
+    plotter_3D(Ps[0], Ps[1], Ps[2])
 
 main()

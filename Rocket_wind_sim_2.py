@@ -8,6 +8,7 @@ make a class to compute the simulation
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import math
 
 
 class Rocket():
@@ -42,7 +43,7 @@ class Rocket():
         torque = np.cross(moment_arm, force_vector)
         torque_x =  torque[0]
         torque_y =  torque[1]
-        print(f"The wind torques are in x {torque_x} and in y {torque_y}")
+        #print(f"The wind torques are in x {torque_x} and in y {torque_y}")
 
         return torque_x, torque_y
     
@@ -114,35 +115,55 @@ class execute():
         self.canard = Canard()
     
     def inputs(self):
-        WS_X = 10 #input("What is the wind speed coming in the x direction: ")
-        WS_Y = 0 #input("What is the wind speed coming in the y direction: ")
-        WS_Z = 0
+        WS_X = 10.0 #input("What is the wind speed coming in the x direction: ")
+        WS_Y = 0.0 #input("What is the wind speed coming in the y direction: ")
+        WS_Z = 0.0
         self.DURATION = 10 #input("How long should the rocket fly for: ")
         self.WS = [WS_X, WS_Y, WS_Z]
 
     def relativeWindSpeedCalc(self):
+        """
+        print(f"VEL_X is {self.VELOCITIES[0]}")
+        print(f"VEL_Y is {self.VELOCITIES[1]}")
+        print(f"VEL_Z is {self.VELOCITIES[2]}")"""
         RWS_X = self.VELOCITIES[0] - self.WS[0]
         RWS_Y = self.VELOCITIES[1] - self.WS[1]
-        RWS_Z = self.VELOCITIES[2] -  self.WS[2]
+        RWS_Z = self.VELOCITIES[2] - self.WS[2]
         self.RWS = [RWS_X, RWS_Y, RWS_Z]
+        return self
 
-    def rotateToRocketsAxis(self,array):
+    def rotateToRocketsAxis(self, array):
         theta = self.ORIENTATIONS[0]
-        phi   = self.ORIENTATIONS[1]
+        phi = self.ORIENTATIONS[1]
+        if theta == 0 or phi == 0:
+            return array
+
+        EPSILON = 1e-6  # Small value to prevent zero rotation
+
+        # If angles are too small, use the identity rotation
+        if abs(theta) < EPSILON and abs(phi) < EPSILON:
+            return array  # No rotation needed
 
         axis_x = np.array([1,0,0])
         axis_y = np.array([0,1,0])
 
-        q_x = R.from_rotvec(theta * axis_x)
-        q_y = R.from_rotvec(phi * axis_y)
+        # Ensure no zero-norm quaternion
+        q_x = R.from_rotvec((theta if abs(theta) >= EPSILON else EPSILON) * axis_x)
+        q_y = R.from_rotvec((phi if abs(phi) >= EPSILON else EPSILON) * axis_y)
 
         total_rotation = q_y * q_x
-        a = total_rotation.apply(array)
-        return a
+        return total_rotation.apply(array)
+    
 
     def windForce(self):
         theta = self.ORIENTATIONS[0]
         phi = self.ORIENTATIONS[1]
+
+        EPSILON = 1e-6
+        if abs(theta) < EPSILON:
+            theta = EPSILON
+        if abs(phi) < EPSILON:
+            phi = EPSILON
 
         crossSectionalArea_X = self.rocket.LENGTH * self.rocket.RADIUS  * (np.cos(theta)) 
         crossSectionalArea_Y = self.rocket.LENGTH * self.rocket.RADIUS * (np.cos(phi))
@@ -150,9 +171,13 @@ class execute():
         
         
         self.relativeWindSpeedCalc()
-        force_X =  ((self.RWS[0])**2) * crossSectionalArea_X * self.rocket.DRAG_CONSTANT
-        force_Y =  ((self.RWS[1])**2) * crossSectionalArea_Y * self.rocket.DRAG_CONSTANT  
-        force_Z =  ((self.RWS[2])**2) * crossSectionalArea_Z * self.rocket.DRAG_CONSTANT  #includes nose cone drag coeffiecient
+        """
+        print(f"RWS_X is {self.RWS[0]}")
+        print(f"RWS_Y is {self.RWS[1]}")
+        print(f"RWS_Z is {self.RWS[2]}")"""
+        force_X =  -((self.RWS[0])**2) * crossSectionalArea_X * self.rocket.DRAG_CONSTANT
+        force_Y =  -((self.RWS[1])**2) * crossSectionalArea_Y * self.rocket.DRAG_CONSTANT  
+        force_Z =  -((self.RWS[2])**2) * crossSectionalArea_Z * self.rocket.DRAG_CONSTANT  #includes nose cone drag coeffiecient
         
         wind_force = [force_X, force_Y, force_Z]
 
@@ -169,8 +194,14 @@ class execute():
         rotated_thrust = self.rotatedThrust()
 
         self.VELOCITIES[0] += (rotated_thrust[0] + wind_force[0]) / self.rocket.MASS * self.TIMESTEP
+        #print(f"The rotated thrust in x is {rotated_thrust[0]}")
+        #print(f"The wind force in x is {wind_force[0]}")
         self.VELOCITIES[1] += (rotated_thrust[1] + wind_force[1]) / self.rocket.MASS * self.TIMESTEP
+        #print(f"The rotated thrust in y is {rotated_thrust[1]}")
+        #print(f"The wind force in y is {wind_force[1]}")
         self.VELOCITIES[2] += (rotated_thrust[2] + wind_force[2] + self.rocket.GRAVITY * self.rocket.MASS) / self.rocket.MASS * self.TIMESTEP
+        #print(f"The rotated thrust in z is {rotated_thrust[2]}")
+        #print(f"The wind force in z is {wind_force[2]}")
         return self
     
     def changeInPosition(self):
@@ -206,14 +237,18 @@ class execute():
         Vs = [[],[],[]]
         AVs = [[],[]]
         time = 0
-        for i in range(2)
+        for i in range(3):
             while time < self.DURATION:
                 Ps[0].append(self.POSITIONS[0])
                 Ps[1].append(self.POSITIONS[1])
                 Ps[2].append(self.POSITIONS[2])
                 Os[0].append(self.ORIENTATIONS[0])
                 Os[1].append(self.ORIENTATIONS[1]) 
-                #print(self.ORIENTATIONS[1])
+                print(f" the velocity in x is {self.VELOCITIES[0]}")
+                print(f" the rotated thrust in x is {(self.rotatedThrust())[1]}")
+                if (math.isnan(self.VELOCITIES[0])):
+                    print(time) 
+                    
                 Vs[0].append(self.VELOCITIES[0]) 
                 Vs[1].append(self.VELOCITIES[1]) 
                 Vs[2].append(self.VELOCITIES[2]) 
@@ -234,6 +269,7 @@ class execute():
 
                 time += self.TIMESTEP
             self.rocket.THRUST = 0
+            time = 0
         
         return Ps, Os, Vs, AVs
 

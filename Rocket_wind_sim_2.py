@@ -96,7 +96,7 @@ class execute():
     
     def inputs(self):
         WS_X = 50.0 #input("What is the wind speed coming in the x direction: ")
-        WS_Y = 5.0 #input("What is the wind speed coming in the y direction: ")
+        WS_Y = 0 #input("What is the wind speed coming in the y direction: ")
         WS_Z = 0.0
         self.DURATION = 30 #input("How long should the rocket fly for: ")
         self.WS = [WS_X, WS_Y, WS_Z]
@@ -106,7 +106,7 @@ class execute():
         RWS_Y = -self.VELOCITIES[1] + self.WS[1]
         RWS_Z = -self.VELOCITIES[2] + self.WS[2]
         self.RWS = [RWS_X, RWS_Y, RWS_Z]
-        print(f"The RWS in x,y,z are {self.RWS}")
+        #print(f"The RWS in x,y,z are {self.RWS}")
         return self
 
     def rotateToRocketsAxis(self, array):
@@ -210,6 +210,7 @@ class execute():
             Ps[1].append(self.POSITIONS[1])
             Ps[2].append(self.POSITIONS[2])
             Os[0].append(self.ORIENTATIONS[0])
+            print(self.ORIENTATIONS[0])
             Os[1].append(self.ORIENTATIONS[1])       
             Vs[0].append(self.VELOCITIES[0]) 
             Vs[1].append(self.VELOCITIES[1]) 
@@ -231,7 +232,7 @@ class execute():
             CTx, CTy = self.canard.canardTorqueCalc(RWS_transformed, self.ORIENTATIONS)
             self.changeInAngularVelocity(RTx, RTy,CTx, CTy)
             error = self.error()
-            self.canard.proportional(error)
+            #self.canard.proportional(error)
 
             time += self.TIMESTEP
             if time > 10: 
@@ -247,13 +248,13 @@ def plotter_3D(x,y,z):
     ax.set_xlabel('X-axis') 
     ax.set_ylabel('Y-axis')  
     ax.set_zlabel('Z-axis')  
-    ax.set_xlim3d(0,1000)
+    """ax.set_xlim3d(0,1000)
     ax.set_ylim3d(0,1000)
-    ax.set_zlim3d(0,1000)
+    ax.set_zlim3d(0,1000)"""
     plt.show()
 
 def plot_2d(x,y):
-    plt.plot(x,y, marker='o ', color='b', label='Line 1')
+    plt.plot(x,y, color='b', label='Line 1')
     plt.show()
 
 def main():

@@ -1,8 +1,4 @@
 #A rocket path prediction simulation
-"""This program aims to predict the path of the rocket which the bayes "PCB" will be flying on to gather test data
-It does this by figuring out the acceleration in the grounds frame by transforming the acceleration in the rockets frame through rotation matrices,
-as we have data on the rockets
-"""
 #the necessary imports
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
@@ -10,7 +6,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import json
 
-timestep = 0.1
+timestep = 0.02
 
 orientation_x = []
 orientation_y = []
@@ -33,47 +29,15 @@ with open('combined.json') as file:
             orientation_x.append(rocket_parameters["bno055"]["orientation"]["x"])
             orientation_y.append(rocket_parameters['bno055']["orientation"]["y"])
             orientation_z.append(rocket_parameters['bno055']["orientation"]["z"])
-            linAccel_x.append(rocket_parameters['bno055']["accelerometer"]["x"])
-            linAccel_y.append(rocket_parameters['bno055']["accelerometer"]["y"])
-            linAccel_z.append(rocket_parameters['bno055']["accelerometer"]["z"])
+            linAccel_x.append(rocket_parameters['bno055']["linear_acceleration"]["x"])
+            linAccel_y.append(rocket_parameters['bno055']["linear_acceleration"]["y"])
+            linAccel_z.append(rocket_parameters['bno055']["linear_acceleration"]["z"])
 
         except json.JSONDecodeError as e:
             print(f"JSON Decode Error: {e} in line: {line}")  # Debugging
 
     #return orientation_x, orientation_y, orientation_z, linAccel_x, linAccel_y, linAccel_z
-"""
-#BNO055
-times = columns[0]
-orientation_x = columns[1]
-orientation_y = columns[2]
-orientation_z = columns[3]
-angVelocity_x = columns[4]
-angVelocity_y = columns[5]
-angVelocity_z = columns[6]
-linAccel_x    = columns[7]
-linAccel_y    = columns[8]
-linAccel_z    = columns[9]
-Magnetometer_x = columns[10]
-Magnetometer_y = columns[11]
-Magnetometer_z = columns[12]
-accelerometer_x = columns[13]
-accelerometer_y = columns[14]
-accelerometer_z = columns[15]
-gravVector_x = columns[16]
-gravVector_y = columns[17]
-gravVector_z = columns[18]
-calibration_system = columns[19]
-calibration_gyro = columns[20]
-calibration_accel = columns[21]
-calibration_mag = columns[22]
-boardTemp = columns[23]
-#
-sensorData_temp = columns[24]
-sensorData_pres = columns[25]
-#BMP280
-BMP280Temp = columns[26]
-BMP280Pres = columns[27]
-BMP280Alt  = columns[28]"""
+
 
 size = len(orientation_x)
 
@@ -90,46 +54,51 @@ a_y = []
 a_z = []
 
 
-def placeholder(linAccel_x,linAccel_y, linAccel_z):
+def placeholder(ox,oy,linAccel_x,linAccel_y, linAccel_z,method):
+    #These are no longer used as the BNO does it for me, what a waste of time 
     for i in range(size):
-        """
-        theta = float(orientation_x[i])
-        phi   = float(orientation_y[i])
+        if method == 1:
+            theta = float(orientation_x[i])
+            phi   = float(orientation_y[i])
+            
+            accel_x = float(linAccel_x[i])
+            accel_y = float(linAccel_y[i])
+            accel_z = float(linAccel_z[i])
+
+            rotation_pitch = np.array([[1, 0, 0] ,
+                                    [0, np.cos(theta), np.sin(theta)],
+                                    [0, -1 * np.sin(theta), np.cos(theta)]])
+            
+            rotation_yaw   = np.array([[np.cos(phi), 0, np.sin(phi)],
+                                    [0, 1, 0],
+                                    [-1 * np.sin(phi), 0 , np.cos(phi)]])
+
+            rotation_total = np.dot(rotation_pitch, rotation_yaw)
+            
+            return 
+         
+        if method == 2:
         
-        accel_x = float(linAccel_x[i])
-        accel_y = float(linAccel_y[i])
-        accel_z = float(linAccel_z[i])
+            accel_array = np.array([linAccel_x[i], linAccel_y[i], linAccel_z[i]])
 
-        rotation_pitch = np.array([[1, 0, 0] ,
-                                   [0, np.cos(theta), np.sin(theta)],
-                                   [0, -1 * np.sin(theta), np.cos(theta)]])
+            theta = ox[i]
+            phi   = oy[i]
+
+            axis_x = np.array([1,0,0])
+            axis_y = np.array([0,1,0])
+
+            q_x = R.from_rotvec(theta * axis_x)
+            q_y = R.from_rotvec(phi * axis_y)
+
+            total_rotation = q_x * q_y
+            a = total_rotation.apply(accel_array) 
+                
+            #a_prime = np.array([linAccel_x, linAccel_y, linAccel_z])
+            a =  total_rotation.apply(accel_array)
+            a_x.append(float(a[0]))
+            a_y.append(float(a[1]))
+            a_z.append(float(a[2]))
         
-        rotation_yaw   = np.array([[np.cos(phi), 0, np.sin(phi)],
-                                   [0, 1, 0],
-                                   [-1 * np.sin(phi), 0 , np.cos(phi)]])
-
-        rotation_total = np.dot(rotation_pitch, rotation_yaw)
-        """
-        
-        accel_array = np.array([linAccel_x[i], linAccel_y[i], linAccel_z[i]])
-
-        theta = orientation_x[i]
-        phi   = orientation_y[i]
-
-        axis_x = np.array([1,0,0])
-        axis_y = np.array([0,1,0])
-
-        q_x = R.from_rotvec(theta * axis_x)
-        q_y = R.from_rotvec(phi * axis_y)
-
-        total_rotation = q_x * q_y
-        a = total_rotation.apply(accel_array) 
-              
-        #a_prime = np.array([linAccel_x, linAccel_y, linAccel_z])
-        a =  total_rotation.apply(accel_array)
-        a_x.append(float(a[0]))
-        a_y.append(float(a[1]))
-        a_z.append(float(a[2]))
     return a_x, a_y, a_z
 
 def changeInSpeed(acceleration):
@@ -138,24 +107,23 @@ def changeInSpeed(acceleration):
     return v
 
 def changeInPosition(velocity, acceleration):
-    """Uses the s = ut + 0.5at^2"""
     p = velocity * timestep + 0.5 * acceleration * ((timestep)**2)
     return p                                                                                                                                                                     
 
 
 def velocitySum(ax,ay,az):
-    """This creates an array for the speed in each grou axis direction"""
     speed_x = 0.0
     speed_y = 0.0
     speed_z = 0.0
     for i in range(size):
-        #i swapped these blocks around
-        velo_x.append(speed_x)
-        velo_y.append(speed_y)
-        velo_z.append(speed_z)
+
         speed_x += changeInSpeed(ax[i])
         speed_y += changeInSpeed(ay[i])
         speed_z += changeInSpeed(az[i])
+        velo_x.append(speed_x)
+        velo_y.append(speed_y)
+        velo_z.append(speed_z)
+        
        
     return velo_x, velo_y, velo_z
 
@@ -164,13 +132,13 @@ def positionSum(vx,vy,vz,ax,ay,az):
     r_y = 0.0
     r_z = 0.0
     for i in range(size):
-        #i swapped these blocks around
-        posi_x.append(r_x)
-        posi_y.append(r_y)
-        posi_z.append(r_z)
         r_x += changeInPosition(vx[i],ax[i])
         r_y += changeInPosition(vy[i],ay[i])
         r_z += changeInPosition(vz[i],az[i])
+        posi_x.append(r_x)
+        posi_y.append(r_y)
+        posi_z.append(r_z)
+        
         
     return posi_x, posi_y, posi_z
 
@@ -180,9 +148,9 @@ def plotter_3D(x,y,z):
     
     ax.plot3D(x,y,z, linewidth=5)
     """
-    ax.set_xlim(0, 50)  # Adjust X-axis range
-    ax.set_ylim(0, 50)  # Adjust Y-axis rang
-    ax.set_zlim(0, 125)  # Adjust Z-axis range
+    ax.set_xlim(0, 10000)  # Adjust X-axis range
+    ax.set_ylim(0, 10000)  # Adjust Y-axis rang
+    ax.set_zlim(0, 10000)  # Adjust Z-axis range
     """
     ax.set_xlabel('X-axis') 
     ax.set_ylabel('Y-axis')  
@@ -190,15 +158,18 @@ def plotter_3D(x,y,z):
     plt.show()
 
 def main():
-    ax, ay, az = placeholder(linAccel_x, linAccel_y, linAccel_z)
+    method = 2
+    #ax, ay, az = placeholder(orientation_x, orientation_y, -1* np.array(linAccel_x), -1 *np.array(linAccel_y), np.array(linAccel_z), method)
+    ax, ay, az = -1 * np.array(linAccel_z), -1 *  np.array(linAccel_y), -1*np.array(linAccel_x)
     vx, vy, vz    = velocitySum(ax, ay, az)
     px, py, pz    = positionSum(vx, vy, vz, ax, ay, az)
     plotter_3D(px,py,pz)
         
+
 main()
-
-
 """
-NOTES:
-the structure of this code is rather poor IMO, could be worked upon in the future and probably easily made OOP'esque
+time = numbers = list(range(1, len(orientation_x) + 1))
+plt.plot(time, orientation_y )
+plt.show()"
+
 """
